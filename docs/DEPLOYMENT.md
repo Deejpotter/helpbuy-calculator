@@ -1,5 +1,23 @@
 # Deployment and build notes
 
+## Docker (recommended path)
+
+A production Dockerfile ships with the repo: a multi-stage build that installs locked
+dependencies, runs the type check and build in a `node:22-alpine` stage, then serves the
+result from `nginx:1.27-alpine` with gzip, immutable caching for hashed assets and SPA-safe
+routing (`nginx.conf` is copied in). A `.dockerignore` keeps the context to source only.
+
+```bash
+docker build -t helpbuy-calculator .
+docker run --rm -p 8080:80 helpbuy-calculator   # http://localhost:8080
+```
+
+### Coolify
+
+1. New resource, Build from Dockerfile, point it at the repository on main.
+2. The exposed port is 80; attach your domain and TLS comes from the proxy.
+3. Health: the nginx default config returns 200 on `/`, so the standard healthcheck works.
+
 ## Build
 
 ```bash
