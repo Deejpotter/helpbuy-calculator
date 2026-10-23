@@ -49,5 +49,10 @@ necessarily an estimate (duty, borrowing capacity, default rate, growth) the app
   instead (library ids /reactjs/react.dev and /vitejs/vite) to confirm Vite 7 config patterns.
 - Stack: React 19 + Vite 7 + TypeScript; vitest for the engine; hand-rolled SVG charts; plain
   CSS design system (no component library, no Tailwind) per the no-card design brief.
-- Listing import fetches through r.jina.ai (CORS-enabled reader proxy, verified working from a
-  browser context on the day), with a paste-text fallback for bot-walled sites.
+- Listing import fetches through CORS-permissive reader relays (r.jina.ai, then allorigins),
+  verified working from a browser context on the day, with a paste-text fallback.
+- **realestate.com.au and domain.com.au are deliberately bot-walled** (tested 23 Oct 2026:
+  REA's pages via Akamai 403 even through r.jina.ai; their internal listings JSON API answers
+  429 behind a Kasada challenge). The app detects these walls, says so per-brand, and opens the
+  paste-shortcut flow — no fake "import" that quietly returns junk.
+

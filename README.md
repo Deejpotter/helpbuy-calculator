@@ -22,10 +22,13 @@ npm run build      # type-check + production build to dist/
   ($103k / $165k, indexed 1 July).
 - Property: state/territory + capital-vs-rest (official price caps incl. regional-centre list),
   new vs existing (40% vs 30% max government share), price, deposit, "most the bank will lend".
-- Listing import: paste a realestate.com.au / domain.com.au / any listing URL — fetched via the
-  r.jina.ai reader proxy and parsed (price, address, suburb, beds/baths/cars, state, region,
-  new/existing). If the site blocks importing, paste the listing text instead. Everything stays
-  editable — parsing is a prefill, never final.
+- Listing import: paste a listing URL — fetched through CORS-friendly reader relays and parsed
+  (price, address with multi-word suburbs, beds/baths/cars in both digit-first and keyword-first
+  formats, state, region, new/existing). Sites that deliberately wall off readers
+  (realestate.com.au, domain.com.au — both tested) are detected instantly, explained
+  brand-specifically, and the text-paste path opens automatically with an "Open the listing" link;
+  you copy the overview block and paste it. Everything stays editable — parsing is a prefill,
+  never final.
 - Loan: term (P&I only, ≤ 30y — interest-only is construction-only in the scheme), rate,
   weekly/fortnightly/monthly, extra repayments.
 - Plans & assumptions (advanced): growth, forced-income-cap year, buy-back plan (≥ 5% of value,
