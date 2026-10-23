@@ -17,6 +17,7 @@ const baseInputs = (over: Partial<Inputs> = {}): Inputs => ({
   region: "major",
   homeType: "existing",
   homeValue: 800_000,
+  valuation0: null,
   deposit: 16_000,
   maxLoan: 544_000,
   govShareMode: "gap",
@@ -43,7 +44,7 @@ const baseInputs = (over: Partial<Inputs> = {}): Inputs => ({
 });
 
 describe("structureFromFinance", () => {
-  it("matches the official Rob example: 800k home, 16k deposit, 544k loan â†’ CSP 240k (30%), LVR 68%", () => {
+  it("matches the official Rob example: 800k home, 16k deposit, 544k loan → CSP 240k (30%), LVR 68%", () => {
     const s = structureFromFinance({
       homeValue: 800_000, deposit: 16_000, maxLoan: 544_000,
       homeType: "existing", state: "NSW", region: "major",
@@ -54,7 +55,7 @@ describe("structureFromFinance", () => {
     expect(s.buyerShare).toBe(560_000);
   });
 
-  it("computes the official maximum purchase price formula (deposit+loan)/(1âˆ’maxCSP)", () => {
+  it("computes the official maximum purchase price formula (deposit+loan)/(1−maxCSP)", () => {
     const s = structureFromFinance({
       homeValue: 999_999_999, deposit: 16_000, maxLoan: 544_000,
       homeType: "existing", state: "NSW", region: "major",
@@ -66,9 +67,9 @@ describe("structureFromFinance", () => {
   it("flags a shortfall when the gap exceeds the maximum CSP", () => {
     const s = structureFromFinance({
       homeValue: 1_000_000, deposit: 20_000, maxLoan: 700_000,
-      homeType: "existing", state: "NSW", region: "major", // gap 280k > 30% = 300k? 30% is 300k ok flipâ€¦
+      homeType: "existing", state: "NSW", region: "major", // gap 280k > 30% = 300k? 30% is 300k ok flip…
     });
-    // V=1,000,000, D=20k, L=700k â†’ gap 280,000 â‰¤ 300,000 â†’ no shortfall
+    // V=1,000,000, D=20k, L=700k → gap 280,000 ≤ 300,000 → no shortfall
     expect(s.shortfall).toBe(0);
     expect(s.govShare).toBe(280_000);
   });
@@ -78,13 +79,35 @@ describe("structureFromFinance", () => {
       homeValue: 1_200_000, deposit: 40_000, maxLoan: 700_000,
       homeType: "existing", state: "NSW", region: "major",
     });
-    expect(eng.shortfall).toBe(100_000); // gap 460k âˆ’ 30%Ã-1.2M=360k
+    expect(eng.shortfall).toBe(100_000); // gap 460k − 30%Ã-1.2M=360k
     const nw = structureFromFinance({
       homeValue: 1_200_000, deposit: 40_000, maxLoan: 700_000,
       homeType: "new", state: "NSW", region: "major",
     });
     expect(nw.shortfall).toBe(0); // 40% of 1.2M = 480k covers the 460k gap
     expect(nw.govShare).toBe(460_000);
+  });
+
+  it("caps the loan at 80% of value via the government top-up (General Terms 3.2(b))", () => {
+    // 650k is above 80% of 800k: the contribution rises so the loan lands at 640k
+    const s = structureFromFinance({
+      homeValue: 800_000, deposit: 16_000, maxLoan: 650_000,
+      homeType: "existing", state: "NSW", region: "major",
+    });
+    expect(s.buyerLoan).toBe(640_000);
+    expect(s.lvr).toBeCloseTo(0.8, 9);
+    expect(s.govShare).toBe(144_000);
+    expect(s.shortfall).toBe(0);
+  });
+
+  it("measures the share percentage on the lower initial valuation when the price is above it (clause 6.3)", () => {
+    const s = structureFromFinance({
+      homeValue: 750_000, valuation0: 725_000, deposit: 50_000, maxLoan: 550_000,
+      homeType: "existing", state: "NSW", region: "major",
+    });
+    expect(s.govShare).toBe(150_000);
+    expect(s.govSharePct).toBeCloseTo(150_000 / 725_000, 6);
+    expect(s.valueBase).toBe(725_000);
   });
 
   it("checks price caps by state and region", () => {
@@ -116,7 +139,7 @@ describe("repaymentFull", () => {
     expect(withExtra.totalInterest).toBeLessThan(base.totalInterest);
   });
 
-  it("weekly repayments on the same loan are roughly the monthly Ã· (52/12)", () => {
+  it("weekly repayments on the same loan are roughly the monthly ÷ (52/12)", () => {
     const m = repaymentFull(500_000, 6, 30, "monthly", 0).amount;
     const w = repaymentFull(500_000, 6, 30, "weekly", 0).amount;
     expect(w).toBeGreaterThan(m * (12 / 52) * 0.99);
@@ -132,22 +155,22 @@ describe("project", () => {
     const r5 = pr.rows[5];
     expect(r5.cspPct).toBeCloseTo(0.3, 6);
     expect(r5.homeValue).toBeCloseTo(800_000 * Math.pow(1.03, 5), 0);
-    // no plan â†’ no payments modeled
+    // no plan → no payments modeled
     expect(pr.buybackSummary.payments).toBe(0);
     expect(pr.buybackSummary.fullOwnershipYear).toBe(null);
   });
 
-  it("plans buy-backs at â‰¥5% of the value, rounded to $1,000, and reduces the CSP", () => {
+  it("plans buy-backs at ≥5% of the value, rounded to $1,000, and reduces the CSP", () => {
     const inp = baseInputs({
       buyback: { enabled: true, startYear: 1, percentPerYear: 5, fundByLoan: false },
       growthPct: 0,
     });
     const s = structureFromFinance({ homeValue: 800_000, deposit: 16_000, maxLoan: 544_000, homeType: "existing", state: "NSW", region: "major" });
     const pr = project(inp, s);
-    // year 1: value 800k, min payment 5% = 40k (rounded to 1k) from CSP 240k â†’ 200k (25%)
+    // year 1: value 800k, min payment 5% = 40k (rounded to 1k) from CSP 240k → 200k (25%)
     expect(pr.rows[1].cspValue).toBe(200_000);
     expect(pr.rows[1].cspPct).toBeCloseTo(0.25, 9);
-    // hits zero-ish over years: 240 âˆ’ 5 Ã- 40 = 40 at year 5; then full remaining share (40k â‰¤5% rule) at year 6
+    // hits zero-ish over years: 240 − 5 Ã- 40 = 40 at year 5; then full remaining share (40k ≤5% rule) at year 6
     expect(pr.rows[6].cspValue).toBeCloseTo(0, 6);
     expect(pr.rows[6].cspPct).toBeCloseTo(0, 6);
     // buy-back summary: 6 payments totalling the whole 240k share, full ownership reached in year 6
@@ -168,7 +191,7 @@ describe("project", () => {
     const s = structureCustom({ homeValue: 700_000, deposit: 21_000, customGovSharePct: 20, homeType: "existing", state: "NSW", region: "major" });
     expect(s.govShare).toBe(140_000);
     const pr = project(inp, s);
-    // at year 1 value = 760k, CSP % = 20% Ã- 700/760 â†’ dollars still 140k â†’ 18.42%
+    // at year 1 value = 760k, CSP % = 20% Ã- 700/760 → dollars still 140k → 18.42%
     expect(pr.rows[1].cspValue).toBeCloseTo(140_000, 0);
     expect(pr.rows[1].cspPct).toBeCloseTo(0.1842105, 6);
   });
@@ -181,12 +204,12 @@ describe("project", () => {
       sellAfterYear: 5,
       agentPct: 0,          // isolate: 1M example? use growth to reach 1M at year 5
       saleLegalFees: 0,
-      termYears: 40,        // avoid full payoff noise: interest-only-ish? no â€” use 40-yr term
+      termYears: 40,        // avoid full payoff noise: interest-only-ish? no — use 40-yr term
       extraRepayment: 0,
     });
     void inp;
     // Simpler: reuse the guide numbers directly with custom mode and zero-growth loan math disabled is
-    // not possible â€” instead verify the waterfall arithmetic on a synthetic projection.
+    // not possible — instead verify the waterfall arithmetic on a synthetic projection.
     const s = structureFromFinance({ homeValue: 750_000, deposit: 30_000, maxLoan: 570_000, homeType: "existing", state: "NSW", region: "major" });
     const pr = project({ ...inp, sellAfterYear: 5 }, s);
     const sold = pr.soldAt!;

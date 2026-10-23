@@ -36,7 +36,7 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
     if (g.state) bits.push(g.state);
     if (g.beds.value) bits.push(`${g.beds.value} bed`);
     if (g.cars.value) bits.push(`${g.cars.value} car`);
-    return bits.join(" Â· ") || "";
+    return bits.join(" · ") || "";
   };
 
   async function run(raw: string) {
@@ -104,7 +104,7 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
           aria-label="Listing URL"
         />
         <button className={"btn solid" + (phase === "loading" ? " loading" : "")} onClick={() => run(url)} disabled={phase === "loading"}>
-          {phase === "loading" ? "Readingâ€¦" : "Read listing"}
+          {phase === "loading" ? "Reading…" : "Read listing"}
         </button>
       </div>
       {message ? (
@@ -113,7 +113,7 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
           {phase === "blocked" && url ? (
             <>
               <br />
-              <a href={url} target="_blank" rel="noopener noreferrer" className="mini-link">Open the listing â†-</a>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="mini-link">Open the listing �-</a>
               {" "}<span className="muted">- copy the overview (address, price, beds/baths/cars), paste below.</span>
             </>
           ) : null}
@@ -124,7 +124,7 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
           {[
             guess.price.matched,
             guess.address.value,
-            [guess.beds.value && `${guess.beds.value} bed`, guess.baths.value && `${guess.baths.value} bath`, guess.cars.value && `${guess.cars.value} car`].filter(Boolean).join(" Â· "),
+            [guess.beds.value && `${guess.beds.value} bed`, guess.baths.value && `${guess.baths.value} bath`, guess.cars.value && `${guess.cars.value} car`].filter(Boolean).join(" · "),
           ].filter(Boolean).join(" - ")}
         </p>
       ) : null}

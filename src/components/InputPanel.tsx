@@ -75,6 +75,23 @@ export default function InputPanel(props: {
         <Row label="Purchase price">
           <MoneyInput id="value" value={I.homeValue} onChange={(v) => set("homeValue", v)} step={10_000} wide />
         </Row>
+        <Row label="Initial valuation (optional)" note="if the valuer values it below the price, the share % rises off that figure">
+          <Seg
+            name="val"
+            label="Initial valuation"
+            value={I.valuation0 === null ? "off" : "on"}
+            onChange={(v) => set("valuation0", v === "on" ? I.homeValue : null)}
+            options={[
+              { value: "off", label: "Same as price" },
+              { value: "on", label: "Enter lower" },
+            ]}
+          />
+        </Row>
+        {I.valuation0 !== null ? (
+          <Row label="Valued at" note="clause 6.3: the share is measured on min(price, valuation)">
+            <MoneyInput value={I.valuation0} onChange={(v) => set("valuation0", v)} step={5000} wide />
+          </Row>
+        ) : null}
         <Row label="Your deposit" note="keep about $5-6k more aside for duty and setup costs">
           <MoneyInput id="deposit" value={I.deposit} onChange={(v) => set("deposit", v)} step={1000} wide />
         </Row>
@@ -230,6 +247,11 @@ export default function InputPanel(props: {
             </Row>
           </>
         ) : null}
+        <p className="hist">
+          Note: improvement costs add up over a 12-month window towards the $21,000 threshold, you must notify before
+          you start, and the adjustment applies only if you did notify. Improvements come out of your pocket (savings
+          or borrowing); the government does not fund them.
+        </p>
         <Row label="Income above the cap from year" note="0 = never. Models the required minimum payment">
           <NumberInput value={I.incAboveCapFromYear} onChange={(v) => set("incAboveCapFromYear", Math.max(0, v))} min={0} max={40} />
         </Row>

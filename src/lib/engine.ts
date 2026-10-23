@@ -42,7 +42,8 @@ export type Inputs = {
   region: "major" | "rest";
   homeType: HomeType;
 
-  homeValue: number;
+  homeValue: number;           // contract price
+  valuation0: number | null;   // initial valuation; if below price, percentages are measured on it
   deposit: number;
   maxLoan: number;             // most the bank will lend you (on the buyer's share)
   govShareMode: "gap" | "custom";
@@ -80,13 +81,14 @@ export type Check = {
 };
 
 export type Structure = {
-  homeValue: number;
+  homeValue: number;      // contract price
+  valueBase: number;      // min(price, initial valuation): the value percentages use
   deposit: number;
   govShareLimit: number;
   govShare: number;        // CSP dollars
   govSharePct: number;
-  buyerShare: number;      // dollars (value âˆ’ CSP)
-  buyerLoan: number;       // dollars (buyerShare âˆ’ deposit)
+  buyerShare: number;      // dollars (value − CSP)
+  buyerLoan: number;       // dollars (buyerShare − deposit)
   lvr: number;
   scans: {
     depositOk: boolean;
@@ -111,6 +113,7 @@ export function capFor(state: StateCode, region: "major" | "rest"): number | nul
  */
 export function structureFromFinance(p: {
   homeValue: number;
+  valuation0?: number | null;
   deposit: number;
   maxLoan: number;
   homeType: HomeType;
@@ -118,31 +121,41 @@ export function structureFromFinance(p: {
   region: "major" | "rest";
 }): Structure {
   const V = Math.max(0, p.homeValue);
+  const valueBase = Math.max(1, Math.min(V, p.valuation0 ?? V));
   const D = Math.max(0, p.deposit);
   const L = Math.max(0, p.maxLoan);
   const maxCsp = maxCspShare(p.homeType);
 
-  const rawGap = V - D - L;
-  const govShare = Math.max(0, Math.min(maxCsp * V, rawGap));
+  // General Terms clause 6.1: CC = max(0, min(MaxCC, PP - Loan - Deposit)); CC <= 0 -> not eligible.
+  const rawCc = Math.max(0, V - D - L);
+  // Clause 3.2(b): if that structure would leave the loan above 80% of the value, the
+  // government increases its contribution (within the maximum) so the loan lands at 80% or less.
+  let cc = rawCc;
+  if (rawCc > 0) {
+    const lvrFix = 0.2 * V - D;
+    if (lvrFix > cc) cc = Math.min(maxCsp * V, lvrFix);
+  }
+  const govShare = Math.min(cc, maxCsp * V);
   const buyerLoan = Math.max(0, V - D - govShare);
-  const buyerShare = V - govShare;
+  // Percentages are stated off min(price, initial valuation) - clause 6.3.
+  const govSharePct = valueBase > 0 ? (govShare / V) * (V / valueBase) : 0;
 
   const cap = capFor(p.state, p.region);
   const capOk = cap === null ? true : V <= cap;
   const maxAffordablePrice = Math.floor((D + L) / (1 - maxCsp));
-  const shortfall = Math.max(0, rawGap - maxCsp * V);
+  const shortfall = Math.max(0, rawCc - maxCsp * V);
 
-  const govSharePct = V > 0 ? govShare / V : 0;
-  const lvr = V > 0 ? buyerLoan / V : 0;
+  const lvr = valueBase > 0 ? buyerLoan / valueBase : 0;
   const depPct = V > 0 ? D / V : 0;
 
   return {
     homeValue: V,
+    valueBase,
     deposit: D,
     govShareLimit: maxCsp * V,
     govShare,
     govSharePct,
-    buyerShare,
+    buyerShare: Math.max(0, valueBase * (1 - govSharePct)),
     buyerLoan,
     lvr,
     scans: {
@@ -157,9 +170,10 @@ export function structureFromFinance(p: {
   };
 }
 
-/** Custom-share mode: you pick the CSP% (within limits) and the loan is what remains. */
+/** Custom-share mode: you pick the government share (within limits) and the loan is what remains. */
 export function structureCustom(p: {
   homeValue: number;
+  valuation0?: number | null;
   deposit: number;
   customGovSharePct: number;
   homeType: HomeType;
@@ -167,26 +181,27 @@ export function structureCustom(p: {
   region: "major" | "rest";
 }): Structure {
   const V = Math.max(0, p.homeValue);
+  const valueBase = Math.max(1, Math.min(V, p.valuation0 ?? V));
   const D = Math.max(0, p.deposit);
   const maxCsp = maxCspShare(p.homeType);
   const govShare = Math.max(0, Math.min(maxCsp * V, (p.customGovSharePct / 100) * V));
   const buyerLoan = Math.max(0, V - govShare - D);
-  const buyerShare = V - govShare;
 
   const cap = capFor(p.state, p.region);
   const capOk = cap === null ? true : V <= cap;
-  const govSharePct = V > 0 ? govShare / V : 0;
-  const lvr = V > 0 ? buyerLoan / V : 0;
+  const govSharePct = valueBase > 0 ? (govShare / V) * (V / valueBase) : 0;
+  const lvr = valueBase > 0 ? buyerLoan / valueBase : 0;
   const depPct = V > 0 ? D / V : 0;
   const maxAffordablePrice = Math.floor((D + buyerLoan) / Math.max(0.2, 1 - govSharePct));
 
   return {
     homeValue: V,
+    valueBase,
     deposit: D,
     govShareLimit: maxCsp * V,
     govShare,
     govSharePct,
-    buyerShare,
+    buyerShare: Math.max(0, valueBase * (1 - govSharePct)),
     buyerLoan,
     lvr,
     scans: {
@@ -210,7 +225,7 @@ export function repayment(loan: number, ratePct: number, termYears: number, freq
 export type LoanStats = { amount: number; payYears: number; totalInterest: number; nPeriods: number };
 
 /**
- * Bank-style per-period repayment: nominal annual rate Ã· periods per year.
+ * Bank-style per-period repayment: nominal annual rate ÷ periods per year.
  * `extra` is an additional amount paid every period.
  */
 export function repaymentFull(
@@ -259,7 +274,7 @@ export type YearRow = {
   buyerSharePct: number;
   buyerFractionDollar: number; // buyer share of the property value
   loanBalance: number;         // buyer's home loan balance (incl. any buy-back borrowing)
-  buyerEquityDollar: number;   // buyerFractionDollar âˆ’ loanBalance
+  buyerEquityDollar: number;   // buyerFractionDollar − loanBalance
 };
 
 export type BuybackSummary = {
@@ -285,8 +300,8 @@ export type Projection = { rows: YearRow[]; events: string[]; soldAt: SoldAt | n
  *
  * Models (all sourced from the official guides):
  *  - value path with growth; an improvement bumps the path from its year (Vpre + uplift).
- *  - improvement â‰¥ $21k (FY26-27) adjusts CSP%: CSPpre Ã- Vpre / Vpost (Customer Guide).
- *  - planned buy-backs: â‰¥ 5% of current value, rounded to nearest $1,000, from startYear.
+ *  - improvement ≥ $21k (FY26-27) adjusts CSP%: CSPpre Ã- Vpre / Vpost (Customer Guide).
+ *  - planned buy-backs: ≥ 5% of current value, rounded to nearest $1,000, from startYear.
  *  - optional forced buy-back (over income cap 2 consecutive FYs): one minimum-sized payment.
  *  - buy-backs funded by a loan increase ride on the loan balance (repayments must be re-quoted by the lender).
  *  - sale at year N: waterfall in the Guide's payout order.
@@ -305,13 +320,10 @@ export function project(inp: Inputs, s: Structure): Projection {
     inp.incAboveCapFromYear + 2,
   );
 
-  // value path
+  // value path starts at the settled value (min of price and initial valuation - clause 6.3)
   const values: number[] = [];
   for (let t = 0; t <= horizon; t++) {
-    if (imp && imp.year > 0 && t === imp.year - 1) {
-      // remember pre value
-    }
-    values.push(s.homeValue * Math.pow(1 + g, t));
+    values.push(s.valueBase * Math.pow(1 + g, t));
   }
   if (imp && imp.year >= 1 && imp.year <= horizon) {
     const vPre = imp.year > 1 ? values[imp.year - 1] : s.homeValue;
@@ -442,7 +454,7 @@ function simulateBalance(
 /**
  * Rough borrowing capacity from income: monthly surplus after living costs, HECS haircut and
  * other debts, applied at the STRESSED rate (rate + APRA 3% buffer). A lender's real
- * assessment (CBA's) differs â€” present this as a heuristic, never a quote.
+ * assessment (CBA's) differs — present this as a heuristic, never a quote.
  */
 export function borrowingCapacity(p: {
   grossIncome: number;
@@ -472,7 +484,7 @@ export function eligibility(inp: Inputs, s: Structure): Check[] {
 
   checks.push({
     id: "income",
-    label: `Income cap - ${typeLabel} Â· FY 2026-27`,
+    label: `Income cap - ${typeLabel} · FY 2026-27`,
     ok: overCap ? "no" : "yes",
     detail: overCap
       ? `That's $${Math.round(inp.combinedIncome - cap).toLocaleString()} over the $${cap.toLocaleString()} cap. The test reads last financial year's tax Notice of Assessment and it's strict: no exemptions, even for one-off bonuses or redundancy payouts.`
@@ -490,7 +502,7 @@ export function eligibility(inp: Inputs, s: Structure): Check[] {
 
   checks.push({
     id: "lvr",
-    label: "Loan 80% of price or less Â· no LMI",
+    label: "Loan 80% of price or less · no LMI",
     ok: s.scans.lvrOk ? "yes" : "no",
     detail: s.scans.lvrOk
       ? `The loan is ${(s.lvr * 100).toFixed(1)}% of the price, so there's no Lender's Mortgage Insurance. The official guide calls this a potential saving of thousands.`
@@ -534,7 +546,7 @@ export function upfrontCash(inp: Inputs, s: Structure, dutyEstimate: number | nu
   return s.deposit + duty + inp.otherUpfrontCosts;
 }
 
-/** The official Customer Guide example â€” a sensible neutral starting point. */
+/** The official Customer Guide example — a sensible neutral starting point. */
 export const initialInputs: Inputs = {
   applicantType: "single",
   combinedIncome: 95_000,
@@ -542,6 +554,7 @@ export const initialInputs: Inputs = {
   region: "major",
   homeType: "existing",
   homeValue: 800_000,
+  valuation0: null,
   deposit: 16_000,
   maxLoan: 544_000,
   govShareMode: "gap",

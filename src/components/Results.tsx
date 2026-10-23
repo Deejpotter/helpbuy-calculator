@@ -73,7 +73,7 @@ export function Results(props: {
             <span className="cap">the minimum: 5% of today's value</span>
             {!I.buyback.enabled ? (
               <button className="mini-cta" onClick={props.onEnableBuyback}>
-                Model a buy-back plan â†’
+                Model a buy-back plan →
               </button>
             ) : (
               <span className="cap c-green">plan on - see Path to full ownership</span>
@@ -121,11 +121,11 @@ export function Results(props: {
         </table>
       </Section>
 
-      <Section title="Checked against the rules" id="checks" index="02" aside={<a className="btn" href={SOURCES.eligibilityTool}>official eligibility tool â†-</a>}>
+      <Section title="Checked against the rules" id="checks" index="02" aside={<a className="btn" href={SOURCES.eligibilityTool}>official eligibility tool �-</a>}>
         <ul className="checks">
           {checks.map((c) => (
             <li key={c.id} data-ok={c.ok}>
-              <span className="ck" aria-hidden="true">{c.ok === "yes" ? "âœ“" : c.ok === "no" ? "âœ•" : "Â·"}</span>
+              <span className="ck" aria-hidden="true">{c.ok === "yes" ? "✓" : c.ok === "no" ? "✕" : "·"}</span>
               <span>
                 <span className="ck-line">
                   <strong>{c.label}</strong>
@@ -187,7 +187,7 @@ export function Results(props: {
                 <div className="journey-fill" style={{ width: `${(1 - s.govSharePct) * 100}%` }} />
               </div>
               <div className="journey-caps">
-                <span>today Â· you own {pct(1 - s.govSharePct)}</span>
+                <span>today · you own {pct(1 - s.govSharePct)}</span>
                 <span>100%{bs.fullOwnershipYear ? `, full ownership by year ${bs.fullOwnershipYear}` : ""}</span>
               </div>
             </div>
@@ -199,6 +199,13 @@ export function Results(props: {
                 <tr><th>Funding mode</th><td className="num muted">{I.buyback.fundByLoan ? "by borrowing more - your lender re-quotes the repayment" : "from savings"}</td></tr>
               </tbody>
             </table>
+            {I.buyback.fundByLoan ? (
+              <p className="muted">
+                Heads up: funding a buy-back by borrowing can bring Lender's Mortgage Insurance back if the bigger loan
+                goes over 80% of the value - the scheme's Target Market Determination allows that choice. A fresh
+                valuation is needed for each payment and it must be made within 90 days of the valuation date.
+              </p>
+            ) : null}
             <p className="muted">
               Every payment is at least 5% of the value <em>at that time</em>, rounded to $1,000, and based on a fresh
               valuation you pay for. It's never valued from what the government first contributed. Adjust the schedule
@@ -247,7 +254,7 @@ export function Results(props: {
               beneficiary can take over the arrangement within two years - see the Customer Guide.
             </p>
             <table className="flat">
-              <thead><tr><th>Sell afterâ€¦</th><th>Sale price</th><th>Commonwealth</th><th>Loan payout</th><th>Cash to you</th></tr></thead>
+              <thead><tr><th>Sell after…</th><th>Sale price</th><th>Commonwealth</th><th>Loan payout</th><th>Cash to you</th></tr></thead>
               <tbody>
                 {sellRows.map((yr) => {
                   const row = pr.rows[yr];
@@ -284,7 +291,7 @@ export function Results(props: {
                     ? "no estimate for this territory - enter the amount yourself"
                     : aud(dutyEstimate) + " (estimate)"}
                 {" "}
-                <a href={stateLink} className="mini-link">check it on your state's calculator â†-</a>
+                <a href={stateLink} className="mini-link">check it on your state's calculator �-</a>
               </td>
             </tr>
             <tr><th>Other upfront costs</th><td className="num">{aud(I.otherUpfrontCosts)}</td></tr>
@@ -298,7 +305,7 @@ export function Results(props: {
       <Section title="Serviceability sanity check (rough)" id="capacity" index="07">
         <table className="flat">
           <tbody>
-            <tr className="row-you"><th>Income inputs â†’ rough capacity</th><td className="num strong c-green">{aud(capacity.estimate)}</td></tr>
+            <tr className="row-you"><th>Income inputs → rough capacity</th><td className="num strong c-green">{aud(capacity.estimate)}</td></tr>
             <tr><th>Your entered borrowing amount</th><td className="num">{aud(capacity.against)}</td></tr>
           </tbody>
         </table>

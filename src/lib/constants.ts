@@ -98,7 +98,7 @@ export const RULES = {
 } as const;
 
 export const DEFAULTS = {
-  ratePct: 5.5, // editable â€” verify current rate on CBA's site; not a quote
+  ratePct: 5.5, // editable — verify current rate on CBA's site; not a quote
   growthPct: 3.0,
   incomeGrowthPct: 2.5,
 } as const;
@@ -120,6 +120,11 @@ export const SOURCES = {
   faq: "https://firsthomebuyers.gov.au/frequently-asked-questions-2",
   repaymentGuide: "https://firsthomebuyers.gov.au/HTB-repayment",
   customerGuide: "https://firsthomebuyers.gov.au/helptobuycustomerguide",
+  factSheet: "https://firsthomebuyers.gov.au/media/1661",
+  tmd: "https://firsthomebuyers.gov.au/media/1663",
+  generalTerms: "https://firsthomebuyers.gov.au/media/1665",
+  newBuild: "https://firsthomebuyers.gov.au/HTB-newbuild",
+  homeImprovement: "https://firsthomebuyers.gov.au/HTB-homereno",
   cbaScheme: "https://www.commbank.com.au/home-loans/australian-government-help-to-buy-scheme.html",
   cbaRates: "https://www.commbank.com.au/personal/home-loans/interest-rates-fees.html",
 } as const;

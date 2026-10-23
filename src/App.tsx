@@ -127,6 +127,7 @@ export default function App() {
       inputs.govShareMode === "custom"
         ? structureCustom({
             homeValue: inputs.homeValue,
+            valuation0: inputs.valuation0,
             deposit: inputs.deposit,
             customGovSharePct: inputs.customGovSharePct,
             homeType: inputs.homeType,
@@ -135,13 +136,14 @@ export default function App() {
           })
         : structureFromFinance({
             homeValue: inputs.homeValue,
+            valuation0: inputs.valuation0,
             deposit: inputs.deposit,
             maxLoan: inputs.maxLoan,
             homeType: inputs.homeType,
             state: inputs.state as StateCode,
             region: inputs.region,
           }),
-    [inputs.homeValue, inputs.deposit, inputs.maxLoan, inputs.customGovSharePct, inputs.govShareMode, inputs.homeType, inputs.state, inputs.region],
+    [inputs.homeValue, inputs.valuation0, inputs.deposit, inputs.maxLoan, inputs.customGovSharePct, inputs.govShareMode, inputs.homeType, inputs.state, inputs.region],
   );
 
   const dutyEstimate = useMemo(
@@ -169,8 +171,8 @@ export default function App() {
   const compareCompute = (inp: Inputs) => {
     const s =
       inp.govShareMode === "custom"
-        ? structureCustom({ homeValue: inp.homeValue, deposit: inp.deposit, customGovSharePct: inp.customGovSharePct, homeType: inp.homeType, state: inp.state as StateCode, region: inp.region })
-        : structureFromFinance({ homeValue: inp.homeValue, deposit: inp.deposit, maxLoan: inp.maxLoan, homeType: inp.homeType, state: inp.state as StateCode, region: inp.region });
+        ? structureCustom({ homeValue: inp.homeValue, valuation0: inp.valuation0, deposit: inp.deposit, customGovSharePct: inp.customGovSharePct, homeType: inp.homeType, state: inp.state as StateCode, region: inp.region })
+        : structureFromFinance({ homeValue: inp.homeValue, valuation0: inp.valuation0, deposit: inp.deposit, maxLoan: inp.maxLoan, homeType: inp.homeType, state: inp.state as StateCode, region: inp.region });
     const { snapshot } = computeLoan(inp, s.buyerLoan);
     return { s, loan: snapshot, summary: summarize(inp, s, snapshot) };
   };
@@ -297,6 +299,11 @@ export default function App() {
             <a href={SOURCES.thresholds}>Thresholds</a>
             <a href={SOURCES.repaymentGuide}>Repayment guide</a>
             <a href={SOURCES.customerGuide}>Customer guide</a>
+            <a href={SOURCES.factSheet}>Fact sheet</a>
+            <a href={SOURCES.tmd}>Target market determination</a>
+            <a href={SOURCES.generalTerms}>General terms</a>
+            <a href={SOURCES.newBuild}>New build guide</a>
+            <a href={SOURCES.homeImprovement}>Improvements guide</a>
             <a href={SOURCES.cbaScheme}>CommBank page</a>
             <a href={SOURCES.maxPriceCalc}>Official max price calculator</a>
           </footer>
