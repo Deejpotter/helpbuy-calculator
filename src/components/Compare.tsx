@@ -71,7 +71,7 @@ export default function Compare(props: {
                         <tr><td>Repayment</td><td className="num">{d.summary.repay}</td></tr>
                         <tr><td>Interest overall</td><td className="num">{aud(d.summary.totalInterest)}</td></tr>
                         <tr><td>Cash needed</td><td className="num">{aud(d.summary.deposit)}</td></tr>
-                        <tr><td className="muted">Cap</td><td className="num muted">{d.summary.cap ? `${aud(d.summary.cap)} ${d.summary.capOk ? "ok" : "OVER"}` : "—"}</td></tr>
+                        <tr><td className="muted">Cap</td><td className="num muted">{d.summary.cap ? `${aud(d.summary.cap)} ${d.summary.capOk ? "ok" : "over"}` : "-"}</td></tr>
                       </tbody>
                     </table>
                     <div className="slot-actions">
@@ -84,7 +84,7 @@ export default function Compare(props: {
           </tbody>
         </table>
       ) : (
-        <p className="muted">No saved scenarios yet — set up a property, save it into a slot, change the inputs for the next one. Great for “same deposit, different houses”.</p>
+        <p className="muted">Nothing saved yet. Set one home here, save it into a slot with the buttons above, then change the numbers and save the next. Nice for comparing the same deposit across houses.</p>
       )}
     </Section>
   );

@@ -59,7 +59,7 @@ export function EquityChart(props: { rows: YearRow[] }) {
 
 export type WfKind = "total" | "costs" | "loan" | "gov" | "net";
 
-/** Waterfall rows for the sale scenario — pure divs, colour-coded bars. */
+/** Waterfall rows for the sale scenario - pure divs, colour-coded bars. */
 export function Waterfall(props: {
   items: Array<{ label: string; amount: number; kind: WfKind }>;
   base: number;

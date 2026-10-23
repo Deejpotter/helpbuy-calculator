@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { aud } from "../lib/format";
 import {
   fetchListingText,
@@ -36,7 +36,7 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
     if (g.state) bits.push(g.state);
     if (g.beds.value) bits.push(`${g.beds.value} bed`);
     if (g.cars.value) bits.push(`${g.cars.value} car`);
-    return bits.join(" · ") || "";
+    return bits.join(" Â· ") || "";
   };
 
   async function run(raw: string) {
@@ -68,8 +68,8 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
         const site = siteLabel(u);
         setPhase("blocked");
         setMessage(
-          `${site} deliberately blocks automated readers (a bot wall) — no importer can get through honestly. ` +
-          "Copy the top of the listing instead: address line, price, beds/baths/cars — then press Parse below.",
+          `${site} deliberately blocks automated readers (a "bot wall"), so no importer gets through. ` +
+          "Copy the top of the listing instead - address, price, beds/baths/cars - then press Parse below.",
         );
       } else {
         setPhase("error");
@@ -83,7 +83,7 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
     setGuess(g);
     if (g.confidence === "none") {
       setPhase("error");
-      setMessage("Parsed, but nothing matched. You can still type the fields manually below — fastest is just the price.");
+      setMessage("Parsed, but nothing matched. You can still type the fields below manually - the price is the one that matters.");
     } else {
       setPhase("done");
       setMessage(`Imported: ${digest(g)}. Everything below stays editable.`);
@@ -97,14 +97,14 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
         <input
           className="tinput url"
           type="url"
-          placeholder="Paste a listing link (realestate.com.au, domain.com.au, homely, openhome…) — or skip straight to paste"
+          placeholder="Paste a listing link (realestate.com.au, domain.com.au, homely...), or skip straight to the paste box below"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && run(url)}
           aria-label="Listing URL"
         />
         <button className={"btn solid" + (phase === "loading" ? " loading" : "")} onClick={() => run(url)} disabled={phase === "loading"}>
-          {phase === "loading" ? "Reading…" : "Read listing"}
+          {phase === "loading" ? "Readingâ€¦" : "Read listing"}
         </button>
       </div>
       {message ? (
@@ -113,8 +113,8 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
           {phase === "blocked" && url ? (
             <>
               <br />
-              <a href={url} target="_blank" rel="noopener noreferrer" className="mini-link">Open the listing ↗</a>
-              {" "}<span className="muted">— copy the overview (address, price, beds/baths/cars), paste below.</span>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="mini-link">Open the listing â†-</a>
+              {" "}<span className="muted">- copy the overview (address, price, beds/baths/cars), paste below.</span>
             </>
           ) : null}
         </p>
@@ -124,13 +124,13 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
           {[
             guess.price.matched,
             guess.address.value,
-            [guess.beds.value && `${guess.beds.value} bed`, guess.baths.value && `${guess.baths.value} bath`, guess.cars.value && `${guess.cars.value} car`].filter(Boolean).join(" · "),
-          ].filter(Boolean).join(" — ")}
+            [guess.beds.value && `${guess.beds.value} bed`, guess.baths.value && `${guess.baths.value} bath`, guess.cars.value && `${guess.cars.value} car`].filter(Boolean).join(" Â· "),
+          ].filter(Boolean).join(" - ")}
         </p>
       ) : null}
       {pasteMode ? (
         <details className="import-paste" open>
-          <summary>Paste the listing text instead — works with every site</summary>
+          <summary>Paste the listing text instead - it works with every site</summary>
           <textarea
             className="tinput"
             rows={6}

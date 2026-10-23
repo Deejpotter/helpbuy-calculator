@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Australian Government Help to Buy scheme constants.
  * Every value carries its "as at" date / financial year. Source: firsthomebuyers.gov.au
  * (fetched 23 Oct 2026) unless noted. Income thresholds and improvement thresholds are
@@ -42,7 +42,7 @@ export function incomeCapFor(applicantType: "single" | "singleParent" | "joint")
   }
 }
 
-/** Property price caps by state × region (capital city / regional centre vs rest of state). */
+/** Property price caps by state Ã- region (capital city / regional centre vs rest of state). */
 export const PRICE_CAPS: Record<StateCode, { major: number | null; rest: number | null }> = {
   NSW: { major: 1_300_000, rest: 800_000 },
   VIC: { major: 950_000, rest: 650_000 },
@@ -98,7 +98,7 @@ export const RULES = {
 } as const;
 
 export const DEFAULTS = {
-  ratePct: 5.5, // editable — verify current rate on CBA's site; not a quote
+  ratePct: 5.5, // editable â€” verify current rate on CBA's site; not a quote
   growthPct: 3.0,
   incomeGrowthPct: 2.5,
 } as const;

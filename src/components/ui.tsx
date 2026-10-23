@@ -86,7 +86,7 @@ export function Row(props: {
   children: ReactNode;
 }) {
   // The whole row is a <label>: every control inside inherits the row text as its
-  // accessible name (implicit label association — no 'for'/id plumbing needed).
+  // accessible name (implicit label association - no 'for'/id plumbing needed).
   return (
     <label className="row">
       <span className="row-label">

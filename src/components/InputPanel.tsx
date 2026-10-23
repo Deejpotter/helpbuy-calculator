@@ -75,13 +75,13 @@ export default function InputPanel(props: {
         <Row label="Purchase price">
           <MoneyInput id="value" value={I.homeValue} onChange={(v) => set("homeValue", v)} step={10_000} wide />
         </Row>
-        <Row label="Your deposit" note="plan on ~$5–6k more for duty + setup costs">
+        <Row label="Your deposit" note="keep about $5-6k more aside for duty and setup costs">
           <MoneyInput id="deposit" value={I.deposit} onChange={(v) => set("deposit", v)} step={1000} wide />
         </Row>
-        <Row label="Most the bank will lend you" note="rough? use the serviceability panel below">
+        <Row label="Most the bank will lend you" note="unsure? Use plan 06 below as a rough check">
           <MoneyInput id="loan" value={I.maxLoan} onChange={(v) => set("maxLoan", v)} step={5000} wide />
         </Row>
-        <Row label="Government contribution" note="bridges the gap — up to 30% existing / 40% new">
+        <Row label="Government contribution" note="covers what's left, up to 30% existing or 40% new">
           <Seg
             name="gov-mode"
             label="Contribution mode"
@@ -112,7 +112,7 @@ export default function InputPanel(props: {
 
       <details open className="grp">
         <summary><span className="idx">03</span>The loan</summary>
-        <Row label="Loan term" note="P&I only — up to 30 years">
+        <Row label="Loan term" note="principal and interest, up to 30 years">
           <Seg
             name="term"
             label="Loan term"
@@ -191,7 +191,7 @@ export default function InputPanel(props: {
             </Row>
           </>
         ) : null}
-        <Row label="Improvement (optional)" note="≥ $21k must be notified; CSP adjusts so you keep the uplift">
+        <Row label="Improvement (optional)" note="over $21k must be notified; the share adjusts so you keep the gain">
           <Seg
             name="imp"
             label="Improvement"
@@ -221,7 +221,7 @@ export default function InputPanel(props: {
                 step={1000}
               />
             </Row>
-            <Row label="Value it adds" note="your estimate; a valuation applies in practice">
+            <Row label="Value it adds" note="your estimate; a valuation happens in practice">
               <MoneyInput
                 value={I.improvement.valueUplift}
                 onChange={(v) => set("improvement", { ...I.improvement!, valueUplift: v })}
@@ -230,7 +230,7 @@ export default function InputPanel(props: {
             </Row>
           </>
         ) : null}
-        <Row label="Income above the cap from year" note="0 = never — models the forced minimum payment">
+        <Row label="Income above the cap from year" note="0 = never. Models the required minimum payment">
           <NumberInput value={I.incAboveCapFromYear} onChange={(v) => set("incAboveCapFromYear", Math.max(0, v))} min={0} max={40} />
         </Row>
         <Row label="Income growth / year" note="for the review projection">
@@ -257,7 +257,7 @@ export default function InputPanel(props: {
         <Row label="Other upfront costs" note="conveyancing, inspections, registration, valuations">
           <MoneyInput value={I.otherUpfrontCosts} onChange={(v) => set("otherUpfrontCosts", v)} step={250} />
         </Row>
-        <Row label="Transfer duty" note="rough estimate shown in results; enter the exact figure once you have it">
+        <Row label="Transfer duty" note="rough estimate in the results; type the exact figure when you have it">
           <Seg
             name="duty"
             label="Transfer duty"
@@ -274,7 +274,7 @@ export default function InputPanel(props: {
             <MoneyInput value={I.dutyManual} onChange={(v) => set("dutyManual", v)} step={500} />
           </Row>
         ) : null}
-        <Row label="Ongoing costs / month" note="rates, insurance, strata — you carry these alone">
+        <Row label="Ongoing costs / month" note="rates, insurance, strata: all paid by you">
           <MoneyInput value={I.ongoingMonthlyCosts} onChange={(v) => set("ongoingMonthlyCosts", v)} step={50} />
         </Row>
       </details>

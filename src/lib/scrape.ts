@@ -2,7 +2,7 @@
  * Property listing import. Australian listing sites (realestate.com.au, domain.com.au, ...)
  * block direct browser fetches (CORS + bot walls), so we fetch through the r.jina.ai reader
  * proxy, which returns plain text of the page. If that fails or is blocked, the UI offers a
- * paste-the-text fallback. Every parsed field stays editable — never auto-final.
+ * paste-the-text fallback. Every parsed field stays editable - never auto-final.
  */
 
 import { REGIONAL_CENTRES, type StateCode } from "./constants";
@@ -99,7 +99,7 @@ export async function fetchListingText(url: string): Promise<{ text: string; via
       }
     }
   } catch (e) {
-    if (e instanceof SiteBlockedError) throw e; // defensible signal — don't retry unknown relays for REA-class walls
+    if (e instanceof SiteBlockedError) throw e; // defensible signal - don't retry unknown relays for REA-class walls
   }
   // 2) CORS relay of the raw HTML
   try {

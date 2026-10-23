@@ -1,7 +1,7 @@
 /**
  * Transfer (stamp) duty estimates on the BUYER'S SHARE of the property.
  *
- * IMPORTANT — every table below is a rough estimate "as at" the date in the comment and
+ * IMPORTANT - every table below is a rough estimate "as at" the date in the comment and
  * treats Home to Buy the way most state SROs treat shared-equity purchases: duty payable
  * on your share, not the whole value. Some states understate/overstate concessions for the
  * federal scheme; first home buyer concessions often zero or reduce it further.
@@ -132,4 +132,4 @@ export function roughDuty(state: StateCode, taxableValue: number): number | null
 }
 
 export const DUTY_ESTIMATE_NOTE =
-  "Rough duty estimate on your share of the value at the scales noted. First home buyer concessions and shared-equity rules differ by state — verify on your state revenue office calculator, or enter the exact amount.";
+  "Duty is a rough estimate on your share of the price, using the scales shown. Concessions differ by state - check your state revenue office calculator, or type the exact amount.";

@@ -44,7 +44,7 @@ function saveStoredState(inputs: Inputs): void {
     const stored: StoredState = { v: 1, current: inputs };
     localStorage.setItem(STATE_KEY, JSON.stringify(stored));
   } catch {
-    /* private mode / quota — the app keeps working without persistence */
+    /* private mode / quota - the app keeps working without persistence */
   }
 }
 
@@ -179,9 +179,9 @@ export default function App() {
     const url = location.href;
     try {
       await navigator.clipboard.writeText(url);
-      setToast("Scenario link copied — it encodes all your inputs.");
+      setToast("Link copied. It has all your numbers in it.");
     } catch {
-      setToast("Copy failed — the address bar URL is your shareable link.");
+      setToast("Copy failed, but the address bar URL is your shareable link.");
     }
     setTimeout(() => setToast(""), 3500);
   }
@@ -203,14 +203,14 @@ export default function App() {
       startYear: Math.max(1, inputs.buyback.startYear) || 3,
       percentPerYear: inputs.buyback.percentPerYear || 5,
     });
-    setToast("Buy-back plan on — see “Path to full ownership” (results section 04).");
+    setToast("Buy-back plan added. See Path to full ownership (section 04).");
     setTimeout(() => setToast(""), 3200);
   }
 
   function startOver() {
     try { localStorage.removeItem(STATE_KEY); } catch { /* ignore */ }
     setInputs({ ...DEFAULT_INPUTS });
-    setToast("Cleared back to the example — compare slots kept.");
+    setToast("Back to the example. Your A / B / C compare slots are still saved.");
     setTimeout(() => setToast(""), 3000);
   }
 
@@ -229,8 +229,8 @@ export default function App() {
         <div>
           <h1>Help to Buy <span className="two">Studio</span></h1>
           <p className="sub">
-            Repayments, equity and exit scenarios for the Australian Government Help to Buy shared equity scheme —
-            independent, no sign-up; your scenario lives only in this browser (localStorage).
+            Plan repayments, equity, buy-backs and sales for the Australian Government Help to Buy scheme.
+            Free, no sign-up, and your numbers stay in this browser.
           </p>
         </div>
         <div className="head-actions">
@@ -269,18 +269,24 @@ export default function App() {
           />
           <Section title="Notes" id="notes">
             <ul className="plain notes-list">
-              <li><strong>Where your data lives:</strong> the open scenario and the A/B/C compare slots are stored
-                only in this browser's localStorage — nothing is sent anywhere, there's no account, and a shared
-                link simply encodes the numbers in the URL. “Start over” clears the saved scenario.</li>
-              <li><strong>Your lender is the key contact.</strong> They assess financial capacity, submit to Housing Australia, and confirm final eligibility — this tool is a planner, not a quote. On the current panel: CommBank, Bank Australia, Teachers Mutual group, Queensland Country Bank.</li>
-              <li><strong>No interest or rent on the Commonwealth share</strong> — but its dollar value follows the market: it repays at share-of-value at sale or buy-back, up or down.</li>
-              <li><strong>2% min deposit + government share ≥ 20%</strong> keeps LVR ≤ 80% — LMI avoided. But contribute the maximum you reasonably can; lenders' capacity tests shape the real numbers.</li>
+              <li><strong>Where your numbers live:</strong> this browser only. The open scenario and the A / B / C
+                slots sit in localStorage, nothing is sent anywhere, and there's no account. A shared link simply
+                puts your numbers in the URL; Start over clears the saved scenario.</li>
+              <li><strong>Your lender is the key contact.</strong> They check your finances, lodge the application with
+                Housing Australia, and confirm final eligibility. This tool is a planner, not a quote. On the current
+                panel: CommBank, Bank Australia, Teachers Mutual Bank group, and Queensland Country Bank.</li>
+              <li><strong>The government share charges nothing as it goes.</strong> No interest, no rent. But its dollar
+                value follows the market: at sale or buy-back the government takes its share of whatever the home is
+                worth that day, up or down.</li>
+              <li><strong>Why so little deposit:</strong> a 2% deposit plus the government share keeps the loan at 80% of
+                the price or less, so you skip Lender's Mortgage Insurance. Still put in as much as you reasonably can;
+                the lender's own capacity check shapes the real numbers.</li>
               <li><strong>Thresholds move:</strong> income caps index on 1 July; improvement/build-variation thresholds are $21,000 (FY 2026-27). Price caps are policy-fixed, not indexed.</li>
               <li>House prices shown are list prices; a lender valuation may differ. Growth is an assumption, not a forecast.</li>
             </ul>
             <p className="fine">
               Data sourced from firsthomebuyers.gov.au and CommBank's scheme pages, fetched 23 Oct 2026 (income caps FY
-              2026-27; Customer Guide v260701). Independent tool — not affiliated with Housing Australia, CommBank or any
+              2026-27; Customer Guide v260701). Independent tool - not affiliated with Housing Australia, CommBank or any
               listed party. General information only, not financial advice.
             </p>
           </Section>

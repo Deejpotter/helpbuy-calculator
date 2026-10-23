@@ -1,4 +1,4 @@
-/* Help to Buy Studio — design system v2
+/* Help to Buy Studio - design system v2
    Still no cards: the page is a continuous sheet with hairline rules and type doing the work.
    v2 adds a full colour grammar (focused = decisions first; colourful = colour-coded meaning):
      green  = you / your money        amber = Commonwealth share
@@ -50,7 +50,7 @@ body {
 
 .page { max-width: 76rem; margin: 0 auto; padding: 0 28px 96px; position: relative; }
 
-/* duotone page bar — the one loud visual move */
+/* duotone page bar - the one loud visual move */
 .page::before {
   content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
   background: linear-gradient(90deg, var(--green) 0%, var(--green) 58%, var(--amber) 100%);
@@ -178,7 +178,7 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
 /* ------------------------------- results ------------------------------- */
 
-/* hero strip — the four decisions, always up top */
+/* hero strip - the four decisions, always up top */
 .hero {
   border-top: 1px solid var(--hair); margin-top: 2px; padding: 20px 0 18px;
 }

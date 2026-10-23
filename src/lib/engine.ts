@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Help to Buy calculation engine. Pure functions, no React.
  *
  * Scheme mechanics verified against (23 Oct 2026):
@@ -85,8 +85,8 @@ export type Structure = {
   govShareLimit: number;
   govShare: number;        // CSP dollars
   govSharePct: number;
-  buyerShare: number;      // dollars (value − CSP)
-  buyerLoan: number;       // dollars (buyerShare − deposit)
+  buyerShare: number;      // dollars (value âˆ’ CSP)
+  buyerLoan: number;       // dollars (buyerShare âˆ’ deposit)
   lvr: number;
   scans: {
     depositOk: boolean;
@@ -210,7 +210,7 @@ export function repayment(loan: number, ratePct: number, termYears: number, freq
 export type LoanStats = { amount: number; payYears: number; totalInterest: number; nPeriods: number };
 
 /**
- * Bank-style per-period repayment: nominal annual rate ÷ periods per year.
+ * Bank-style per-period repayment: nominal annual rate Ã· periods per year.
  * `extra` is an additional amount paid every period.
  */
 export function repaymentFull(
@@ -259,7 +259,7 @@ export type YearRow = {
   buyerSharePct: number;
   buyerFractionDollar: number; // buyer share of the property value
   loanBalance: number;         // buyer's home loan balance (incl. any buy-back borrowing)
-  buyerEquityDollar: number;   // buyerFractionDollar − loanBalance
+  buyerEquityDollar: number;   // buyerFractionDollar âˆ’ loanBalance
 };
 
 export type BuybackSummary = {
@@ -274,7 +274,7 @@ export type SoldAt = {
   salePrice: number;
   costs: number;              // agent % + legal
   loanPayout: number;
-  govPayout: number;          // CSP value (share × greater of price / valuation; we use price)
+  govPayout: number;          // CSP value (share Ã- greater of price / valuation; we use price)
   yourNet: number;            // before tax
 };
 
@@ -285,8 +285,8 @@ export type Projection = { rows: YearRow[]; events: string[]; soldAt: SoldAt | n
  *
  * Models (all sourced from the official guides):
  *  - value path with growth; an improvement bumps the path from its year (Vpre + uplift).
- *  - improvement ≥ $21k (FY26-27) adjusts CSP%: CSPpre × Vpre / Vpost (Customer Guide).
- *  - planned buy-backs: ≥ 5% of current value, rounded to nearest $1,000, from startYear.
+ *  - improvement â‰¥ $21k (FY26-27) adjusts CSP%: CSPpre Ã- Vpre / Vpost (Customer Guide).
+ *  - planned buy-backs: â‰¥ 5% of current value, rounded to nearest $1,000, from startYear.
  *  - optional forced buy-back (over income cap 2 consecutive FYs): one minimum-sized payment.
  *  - buy-backs funded by a loan increase ride on the loan balance (repayments must be re-quoted by the lender).
  *  - sale at year N: waterfall in the Guide's payout order.
@@ -343,12 +343,12 @@ export function project(inp: Inputs, s: Structure): Projection {
 
     if (t > 0 && imp && imp.year === t && imp.valueUplift > 0) {
       // Customer Guide: the share's dollar value is held at the pre-modification value, so
-      //   CSP%post = CSP%pre × Vpre / Vpost
+      //   CSP%post = CSP%pre Ã- Vpre / Vpost
       const vPre = values[t - 1];
       cspPct = (cspPct * vPre) / V;
       cspDollars = cspPct * V;
       events.push(
-        `Year ${t}: improvement of $${Math.round(imp.valueUplift).toLocaleString()} — CSP becomes ${(cspPct * 100).toFixed(2)}% (CSP% × Vpre ÷ Vpost)`,
+        `Year ${t}: improvement of $${Math.round(imp.valueUplift).toLocaleString()}, share drops to ${(cspPct * 100).toFixed(2)}% (scales by value before and after)`,
       );
     }
 
@@ -362,7 +362,7 @@ export function project(inp: Inputs, s: Structure): Projection {
         cspDollars = cspPct * V;
         if (inp.buyback.fundByLoan) extraFundedLoan += pay;
         events.push(
-          `Year ${t}: buy-back $${Math.round(pay).toLocaleString()}${inp.buyback.fundByLoan ? " (loan increase)" : " (savings)"} — CSP ${(oldPct * 100).toFixed(2)}% → ${(cspPct * 100).toFixed(2)}%`,
+          `Year ${t}: buy-back of $${Math.round(pay).toLocaleString()}${inp.buyback.fundByLoan ? ", borrowing more" : ", from savings"}, government share ${(oldPct * 100).toFixed(2)}% to ${(cspPct * 100).toFixed(2)}%`,
         );
         buybackSummary.payments++;
         buybackSummary.totalPaid += pay;
@@ -374,7 +374,7 @@ export function project(inp: Inputs, s: Structure): Projection {
         const oldPct = cspPct;
         cspPct = Math.max(0, cspPct - minPay / V);
         cspDollars = cspPct * V;
-        events.push(`Year ${t}: minimum forced buy-back $${Math.round(minPay).toLocaleString()} — CSP ${(oldPct * 100).toFixed(2)}% → ${(cspPct * 100).toFixed(2)}% (review · affordability-gated)`);
+        events.push(`Year ${t}: required buy-back of $${Math.round(minPay).toLocaleString()} (the minimum), government share ${(oldPct * 100).toFixed(2)}% to ${(cspPct * 100).toFixed(2)}% - only ever enforced if you can afford it`);
         buybackSummary.payments++;
         buybackSummary.totalPaid += minPay;
         if (buybackSummary.firstYear === null) buybackSummary.firstYear = t;
@@ -442,7 +442,7 @@ function simulateBalance(
 /**
  * Rough borrowing capacity from income: monthly surplus after living costs, HECS haircut and
  * other debts, applied at the STRESSED rate (rate + APRA 3% buffer). A lender's real
- * assessment (CBA's) differs — present this as a heuristic, never a quote.
+ * assessment (CBA's) differs â€” present this as a heuristic, never a quote.
  */
 export function borrowingCapacity(p: {
   grossIncome: number;
@@ -472,11 +472,11 @@ export function eligibility(inp: Inputs, s: Structure): Check[] {
 
   checks.push({
     id: "income",
-    label: `Income cap — ${typeLabel} · FY 2026-27`,
+    label: `Income cap - ${typeLabel} Â· FY 2026-27`,
     ok: overCap ? "no" : "yes",
     detail: overCap
-      ? `Over the $${cap.toLocaleString()} cap by $${Math.round(inp.combinedIncome - cap).toLocaleString()}. Assessed on your prior-FY Notice of Assessment; strict — no exemptions.`
-      : `$${cap.toLocaleString()} cap ✓ on your prior-FY Notice of Assessment. Indexes each 1 July (next: 1 Jul 2027). During participation, reviews every ≤ 5 years count two consecutive FYs over cap.`,
+      ? `That's $${Math.round(inp.combinedIncome - cap).toLocaleString()} over the $${cap.toLocaleString()} cap. The test reads last financial year's tax Notice of Assessment and it's strict: no exemptions, even for one-off bonuses or redundancy payouts.`
+      : `Under the $${cap.toLocaleString()} cap, judged on last financial year's tax Notice of Assessment. The cap rises with wages every 1 July (next: Jul 2027). Once you own the home, reviews at least every 5 years look at two tax years in a row.`,
   });
 
   checks.push({
@@ -484,26 +484,26 @@ export function eligibility(inp: Inputs, s: Structure): Check[] {
     label: "Minimum 2% deposit",
     ok: s.scans.depositOk ? "yes" : "no",
     detail: s.scans.depositOk
-      ? `$${Math.round(s.deposit).toLocaleString()} is ${(s.deposit / Math.max(1, s.homeValue) * 100).toFixed(1)}% of the price. You must also front duty, legal and inspection costs (concessions can combine — see duty module).`
-      : `Need ≥ $${Math.round(RULES.minDepositShare * s.homeValue).toLocaleString()} for a $${Math.round(s.homeValue).toLocaleString()} home — and to “contribute what you reasonably can” above it.`,
+      ? `$${Math.round(s.deposit).toLocaleString()} is ${(s.deposit / Math.max(1, s.homeValue) * 100).toFixed(1)}% of the price. Duty and other setup costs can't come out of this deposit; state concessions can help with those.`
+      : `A $${Math.round(s.homeValue).toLocaleString()} home needs at least $${Math.round(RULES.minDepositShare * s.homeValue).toLocaleString()} down. You're also expected to put in as much as you reasonably can.`,
   });
 
   checks.push({
     id: "lvr",
-    label: "Deposit + government share ≥ 20% · no LMI",
+    label: "Loan 80% of price or less Â· no LMI",
     ok: s.scans.lvrOk ? "yes" : "no",
     detail: s.scans.lvrOk
-      ? `Loan-to-value ${(s.lvr * 100).toFixed(1)}% — LMI not required. (“Potential LMI saving of thousands” per the Customer Guide.)`
-      : `With the government share maxed, the remaining stake is over 80% — reduce the price, raise the deposit, or get a smaller loan.`,
+      ? `The loan is ${(s.lvr * 100).toFixed(1)}% of the price, so there's no Lender's Mortgage Insurance. The official guide calls this a potential saving of thousands.`
+      : `Even with the biggest government share, the loan would top 80% of the price. Look at a cheaper home, a bigger deposit, or a smaller loan.`,
   });
 
   checks.push({
     id: "csp",
-    label: "Government share within 5–30% existing / 5–40% new",
+    label: "Government share between 5-30% (existing) or 5-40% (new)",
     ok: s.scans.cspInRange ? "yes" : "check",
     detail: s.govShare > 0
-      ? `${(s.govSharePct * 100).toFixed(1)}% of the price. No interest or rent is charged on this share — it is repaid as a % of value at sale/buy-back.`
-      : "No gap to bridge — the lender’s capacity test may rule the scheme out (the 5% Deposit Scheme may suit instead).",
+      ? `The government would take ${(s.govSharePct * 100).toFixed(1)}% of the price. It charges no interest and no rent; at sale or buy-back it simply receives that share of whatever the home is worth that day.`
+      : "Your deposit and loan already cover the whole price, so there's nothing for the government to bridge. Talk to your lender; the 5% Deposit Scheme might suit you better.",
   });
 
   checks.push({
@@ -512,17 +512,17 @@ export function eligibility(inp: Inputs, s: Structure): Check[] {
     ok: s.scans.cap === null ? "check" : s.scans.capOk ? "yes" : "no",
     detail:
       s.scans.cap === null
-        ? "No cap applies for this region entry — verify the suburb/postcode with the official postcode tool."
+        ? "No cap listed for that choice. Check your exact suburb and postcode with the official postcode tool."
         : s.scans.capOk
-          ? `Cap $${s.scans.cap.toLocaleString()} — this price is $${Math.round(s.scans.cap - s.homeValue).toLocaleString()} under it.`
-          : `Cap $${s.scans.cap.toLocaleString()} — $${Math.round(s.homeValue - s.scans.cap).toLocaleString()} over. Caps are NOT indexed; check the official postcode tool.`,
+          ? `The cap here is $${s.scans.cap.toLocaleString()}, so this price clears it with $${Math.round(s.scans.cap - s.homeValue).toLocaleString()} to spare.`
+          : `This is $${Math.round(s.homeValue - s.scans.cap).toLocaleString()} over the $${s.scans.cap.toLocaleString()} cap for the area. Caps don't rise with prices; double-check your suburb with the official postcode tool.`,
   });
 
   checks.push({
     id: "loan",
-    label: "P&I home loan from a Participating Lender (≤ 30 years)",
+    label: "Home loan from a Participating Lender, principal and interest, up to 30 years",
     ok: "yes",
-    detail: `Modeled at ${inp.termYears} years, ${inp.ratePct}% . Interest-only is only allowed during construction. CommBank and Bank Australia et al. are on the current panel.`,
+    detail: `Shown here as ${inp.termYears} years at ${inp.ratePct}% against the current lender panel (CommBank, Bank Australia, Teachers Mutual group, Queensland Country Bank). Your lender sets the real rate and term.`,
   });
 
   return checks;
@@ -534,7 +534,7 @@ export function upfrontCash(inp: Inputs, s: Structure, dutyEstimate: number | nu
   return s.deposit + duty + inp.otherUpfrontCosts;
 }
 
-/** The official Customer Guide example — a sensible neutral starting point. */
+/** The official Customer Guide example â€” a sensible neutral starting point. */
 export const initialInputs: Inputs = {
   applicantType: "single",
   combinedIncome: 95_000,
