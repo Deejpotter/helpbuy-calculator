@@ -1,0 +1,66 @@
+# Deployment and build notes
+
+## Build
+
+```bash
+npm run build     # tsc --noEmit type check + vite build into dist/
+npm run preview   # serve dist/ at http://localhost:4173
+```
+
+The production build is a single-page static app: no server code, no environment variables,
+no runtime APIs beyond the browser (plus the optional reader relays for listing imports, which
+the browser calls directly).
+
+## Bundle (measured, current)
+
+| File | Size | Gzip |
+| --- | --- | --- |
+| dist/index.html | 1.01 kB | 0.59 kB |
+| dist/assets/*.css | 17.7 kB | 4.6 kB |
+| dist/assets/vendor-*.js (all dependencies, cached long-term) | 221.7 kB | 69.0 kB |
+| dist/assets/index-*.js (app code) | 62.5 kB | 20.7 kB |
+| Total JS | 284.2 kB | 89.6 kB |
+
+Vite splits `react` and `react-dom` into their own chunk (`manualChunks`), so app changes do
+not bust the framework cache. Minification is esbuild, hashing blows away stale caches, and
+index.html has an inline favicon (no extra request). Update this table after dependency
+upgrades.
+
+## Serving
+
+Any static host works:
+
+```nginx
+# nginx sketch: gzip + immutable assets
+gzip_types text/css application/javascript image/svg+xml;
+location /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; }
+```
+
+Enable gzip or brotli at the host. With brotli the main app chunk is around 27 kB and the
+vendor chunk around 53 kB.
+
+### Coolify
+
+1. New resource, Build from Dockerfile or Public repository.
+2. Point it at the repository, then either:
+   - use a static-site build command `npm ci && npm run build` with the publish directory
+     `dist`; or
+   - a tiny nginx image that copies `dist/`.
+3. Attach the domain, TLS comes from the proxy.
+4. SPA note: routing is hash-free but single page; there are no client redirects to support,
+   so a plain static server is enough.
+
+### GitHub Pages (alternative)
+
+The app mounts on a domain root, so for username.github.io/pages it needs a base path:
+set `base: '/helpbuy-calculator/'` in `vite.config.ts`, rebuild, and publish `dist/` with the
+Actions pages workflow or `npx gh-pages -d dist`. A custom domain keeps the default `/` base.
+
+## Performance habits in the code
+
+- No UI framework beyond React; charts are hand-rolled SVG; there are no chart or UI-kit
+  dependencies to purge.
+- Listing imports and localStorage writes are debounced-free but cheap; nothing blocks the
+  main thread beyond one bundle parse on load.
+- Fonts are the system stack: zero font requests.
+- Animations are CSS-only and gated behind `prefers-reduced-motion`.
