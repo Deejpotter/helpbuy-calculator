@@ -4,13 +4,14 @@ import { parseMoney, parsePct } from "../lib/format";
 export function Section(props: {
   title: string;
   id?: string;
+  index?: string;
   aside?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section className="sec" id={props.id}>
-      <div className="sec-head">
-        <h2>{props.title}</h2>
+      <div className="sec-aside">
+        <h2>{props.index ? <span className="lead">{props.index}</span> : null}{props.title}</h2>
         {props.aside}
       </div>
       {props.children}

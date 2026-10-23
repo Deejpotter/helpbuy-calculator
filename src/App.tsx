@@ -181,7 +181,7 @@ export default function App() {
     <div className="page">
       <header className="site-head" role="banner">
         <div>
-          <h1>Help to Buy Studio</h1>
+          <h1>Help to Buy <span className="two">Studio</span></h1>
           <p className="sub">
             Repayments, equity and exit scenarios for the Australian Government Help to Buy shared equity scheme —
             independent, no sign-up, nothing stored.
