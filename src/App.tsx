@@ -18,6 +18,7 @@ import InputPanel from "./components/InputPanel";
 import ListingImport from "./components/ListingImport";
 import { Results, type LoanSnapshot } from "./components/Results";
 import Compare, { summarize, type Slot } from "./components/Compare";
+import { TermsPage, PrivacyPage } from "./components/Legal";
 import { Section } from "./components/ui";
 
 const SLOTS_KEY = "helpbuy.studio.slots.v1";
@@ -97,6 +98,14 @@ function computeLoan(inputs: Inputs, buyerLoan: number) {
 /* ----------------------------------- App ----------------------------------- */
 
 export default function App() {
+  const path = location.pathname;
+  if (path.endsWith("/terms")) return <TermsPage />;
+  if (path.endsWith("/privacy")) return <PrivacyPage />;
+
+  return <Planner />;
+}
+
+function Planner() {
   const [inputs, setInputs] = useState<Inputs>(() => {
     const hash = location.hash.replace(/^#/, "");
     // Shared link wins → then whatever you last had on this device → then the example.
@@ -242,6 +251,11 @@ export default function App() {
         </div>
       </header>
 
+      <p className="notice">
+        General information only, not financial advice, and not a quote - read the{" "}
+        <a href="/terms">terms of use</a> and <a href="/privacy">privacy policy</a>.
+      </p>
+
       <ListingImport onApply={(patch) => setInputs((p) => ({ ...p, ...patch, buyback: { ...p.buyback } }))} />
 
       <main className="main-grid">
@@ -294,6 +308,9 @@ export default function App() {
           </Section>
 
           <footer className="site-foot">
+            <a href="/">Planner</a>
+            <a href="/terms">Terms of use</a>
+            <a href="/privacy">Privacy policy</a>
             <a href={SOURCES.scheme}>Scheme</a>
             <a href={SOURCES.priceCaps}>Price caps</a>
             <a href={SOURCES.thresholds}>Thresholds</a>
