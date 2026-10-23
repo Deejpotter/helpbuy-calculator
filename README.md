@@ -4,7 +4,9 @@ An independent, no-signup planner for the **Australian Government Help to Buy Sc
 equity): model repayments, the Commonwealth share, buy-backs, improvements, sales and
 eligibility — either from manual inputs or by importing an online property listing link.
 
-Static React app. No backend, nothing stored, no tracking.
+Static React app. No backend, no account. Your current scenario and compare slots persist
+only in this browser's localStorage — nothing leaves the device; a shared link encodes the
+numbers in the URL.
 
 ## Run
 

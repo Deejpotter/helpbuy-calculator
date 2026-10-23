@@ -83,17 +83,18 @@ export function Section(props: {
 export function Row(props: {
   label: string;
   note?: string;
-  htmlFor?: string;
   children: ReactNode;
 }) {
+  // The whole row is a <label>: every control inside inherits the row text as its
+  // accessible name (implicit label association — no 'for'/id plumbing needed).
   return (
-    <div className="row">
-      <label className="row-label" htmlFor={props.htmlFor}>
+    <label className="row">
+      <span className="row-label">
         {props.label}
         {props.note ? <span className="row-note">{props.note}</span> : null}
-      </label>
-      <div className="row-input">{props.children}</div>
-    </div>
+      </span>
+      <span className="row-input">{props.children}</span>
+    </label>
   );
 }
 

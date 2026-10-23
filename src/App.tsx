@@ -21,6 +21,32 @@ import Compare, { summarize, type Slot } from "./components/Compare";
 import { Section } from "./components/ui";
 
 const SLOTS_KEY = "helpbuy.studio.slots.v1";
+const STATE_KEY = "helpbuy.studio.state.v1";
+
+/* --------------------------- local persistence ----------------------------- */
+
+type StoredState = { v: 1; current: Inputs };
+
+function loadStoredState(): Inputs | null {
+  try {
+    const raw = localStorage.getItem(STATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredState;
+    if (parsed.v !== 1) return null;
+    return mergeInputs(parsed.current);
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredState(inputs: Inputs): void {
+  try {
+    const stored: StoredState = { v: 1, current: inputs };
+    localStorage.setItem(STATE_KEY, JSON.stringify(stored));
+  } catch {
+    /* private mode / quota — the app keeps working without persistence */
+  }
+}
 
 /* ------------------------- shareable state (URL hash) ------------------------ */
 
@@ -73,7 +99,8 @@ function computeLoan(inputs: Inputs, buyerLoan: number) {
 export default function App() {
   const [inputs, setInputs] = useState<Inputs>(() => {
     const hash = location.hash.replace(/^#/, "");
-    return decodeState(hash) ?? DEFAULT_INPUTS;
+    // Shared link wins → then whatever you last had on this device → then the example.
+    return decodeState(hash) ?? loadStoredState() ?? DEFAULT_INPUTS;
   });
   const [toast, setToast] = useState("");
   const [slots, setSlots] = useState<Slot[]>(() => {
@@ -86,6 +113,7 @@ export default function App() {
 
   useEffect(() => {
     history.replaceState(null, "", "#" + encodeState(inputs));
+    saveStoredState(inputs);
   }, [inputs]);
 
   useEffect(() => {
@@ -179,6 +207,13 @@ export default function App() {
     setTimeout(() => setToast(""), 3200);
   }
 
+  function startOver() {
+    try { localStorage.removeItem(STATE_KEY); } catch { /* ignore */ }
+    setInputs({ ...DEFAULT_INPUTS });
+    setToast("Cleared back to the example — compare slots kept.");
+    setTimeout(() => setToast(""), 3000);
+  }
+
   function loadSlot(i: number) {
     const sl = slots[i];
     if (sl?.inputs) {
@@ -195,10 +230,11 @@ export default function App() {
           <h1>Help to Buy <span className="two">Studio</span></h1>
           <p className="sub">
             Repayments, equity and exit scenarios for the Australian Government Help to Buy shared equity scheme —
-            independent, no sign-up, nothing stored.
+            independent, no sign-up; your scenario lives only in this browser (localStorage).
           </p>
         </div>
         <div className="head-actions">
+          <button className="btn" onClick={startOver}>Start over</button>
           <button className="btn" onClick={share}>Share this scenario</button>
           <button className="btn" onClick={() => window.print()}>Print</button>
         </div>
@@ -233,6 +269,9 @@ export default function App() {
           />
           <Section title="Notes" id="notes">
             <ul className="plain notes-list">
+              <li><strong>Where your data lives:</strong> the open scenario and the A/B/C compare slots are stored
+                only in this browser's localStorage — nothing is sent anywhere, there's no account, and a shared
+                link simply encodes the numbers in the URL. “Start over” clears the saved scenario.</li>
               <li><strong>Your lender is the key contact.</strong> They assess financial capacity, submit to Housing Australia, and confirm final eligibility — this tool is a planner, not a quote. On the current panel: CommBank, Bank Australia, Teachers Mutual group, Queensland Country Bank.</li>
               <li><strong>No interest or rent on the Commonwealth share</strong> — but its dollar value follows the market: it repays at share-of-value at sale or buy-back, up or down.</li>
               <li><strong>2% min deposit + government share ≥ 20%</strong> keeps LVR ≤ 80% — LMI avoided. But contribute the maximum you reasonably can; lenders' capacity tests shape the real numbers.</li>

@@ -121,8 +121,11 @@ a { color: var(--green); }
 .grp[open] summary::after { transform: rotate(90deg); }
 .grp[open] .row { padding: 9px 0 0; }
 
-.row { display: grid; grid-template-columns: 1fr; row-gap: 5px; padding: 8px 0; }
-.row-label { font-size: 0.8rem; color: var(--ink-soft); display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+label.row {
+  display: grid; grid-template-columns: 1fr; row-gap: 5px; padding: 8px 0;
+  cursor: default;
+}
+label.row .row-label { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
 .row-note { color: var(--muted); font-weight: 400; font-size: 0.72rem; text-align: right; }
 .row-input { display: flex; align-items: center; gap: 8px; }
 
