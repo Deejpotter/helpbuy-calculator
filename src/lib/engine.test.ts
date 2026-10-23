@@ -132,6 +132,9 @@ describe("project", () => {
     const r5 = pr.rows[5];
     expect(r5.cspPct).toBeCloseTo(0.3, 6);
     expect(r5.homeValue).toBeCloseTo(800_000 * Math.pow(1.03, 5), 0);
+    // no plan → no payments modeled
+    expect(pr.buybackSummary.payments).toBe(0);
+    expect(pr.buybackSummary.fullOwnershipYear).toBe(null);
   });
 
   it("plans buy-backs at ≥5% of the value, rounded to $1,000, and reduces the CSP", () => {
@@ -147,6 +150,11 @@ describe("project", () => {
     // hits zero-ish over years: 240 − 5 × 40 = 40 at year 5; then full remaining share (40k ≤5% rule) at year 6
     expect(pr.rows[6].cspValue).toBeCloseTo(0, 6);
     expect(pr.rows[6].cspPct).toBeCloseTo(0, 6);
+    // buy-back summary: 6 payments totalling the whole 240k share, full ownership reached in year 6
+    expect(pr.buybackSummary.payments).toBe(6);
+    expect(pr.buybackSummary.totalPaid).toBeCloseTo(240_000, 4);
+    expect(pr.buybackSummary.firstYear).toBe(1);
+    expect(pr.buybackSummary.fullOwnershipYear).toBe(6);
   });
 
   it("applies the official improvement formula (20% × 700k / 760k = 18.42%)", () => {

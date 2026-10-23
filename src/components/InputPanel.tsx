@@ -13,7 +13,7 @@ export default function InputPanel(props: {
   return (
     <div className="panel">
       <details open className="grp">
-        <summary>Your situation</summary>
+        <summary><span className="idx">01</span>Your situation</summary>
         <Row label="Applying as">
           <Seg
             name="app-type"
@@ -36,7 +36,7 @@ export default function InputPanel(props: {
       </details>
 
       <details open className="grp">
-        <summary>The property</summary>
+        <summary><span className="idx">02</span>The property</summary>
         <Row label="Home type" note="new = 40% max government share">
           <Seg
             name="home-type"
@@ -81,11 +81,7 @@ export default function InputPanel(props: {
         <Row label="Most the bank will lend you" note="rough? use the serviceability panel below">
           <MoneyInput id="loan" value={I.maxLoan} onChange={(v) => set("maxLoan", v)} step={5000} wide />
         </Row>
-      </details>
-
-      <details className="grp">
-        <summary>Government share</summary>
-        <Row label="Contribution mode">
+        <Row label="Government contribution" note="bridges the gap — up to 30% existing / 40% new">
           <Seg
             name="gov-mode"
             label="Contribution mode"
@@ -93,7 +89,7 @@ export default function InputPanel(props: {
             onChange={(v) => set("govShareMode", v)}
             options={[
               { value: "gap", label: "Bridge the gap" },
-              { value: "custom", label: "Choose %/CSP" },
+              { value: "custom", label: "Set % share" },
             ]}
           />
         </Row>
@@ -109,14 +105,13 @@ export default function InputPanel(props: {
           />
         ) : (
           <p className="hist">
-            Bridges the gap: price − deposit − loan, capped at {I.homeType === "new" ? "40" : "30"}%. Official max
-            price at your capacity: <strong>{aud(props.maxAffordable)}</strong>.
+            Covers price − deposit − loan. Official max price at your capacity: <strong>{aud(props.maxAffordable)}</strong>.
           </p>
         )}
       </details>
 
       <details open className="grp">
-        <summary>The loan</summary>
+        <summary><span className="idx">03</span>The loan</summary>
         <Row label="Loan term" note="P&I only — up to 30 years">
           <Seg
             name="term"
@@ -152,7 +147,7 @@ export default function InputPanel(props: {
       </details>
 
       <details className="grp">
-        <summary>Plans &amp; assumptions</summary>
+        <summary><span className="idx">04</span>Plans: buy-backs &amp; improvements</summary>
         <Row label="Property growth per year">
           <PctInput value={I.growthPct} onChange={(v) => set("growthPct", v)} min={-10} max={15} step={0.25} />
         </Row>
@@ -235,13 +230,16 @@ export default function InputPanel(props: {
             </Row>
           </>
         ) : null}
-        <Row label="Income above the cap from year" note="0 = never. Models a forced minimum buy-back (affordability-gated in reality).">
+        <Row label="Income above the cap from year" note="0 = never — models the forced minimum payment">
           <NumberInput value={I.incAboveCapFromYear} onChange={(v) => set("incAboveCapFromYear", Math.max(0, v))} min={0} max={40} />
+        </Row>
+        <Row label="Income growth / year" note="for the review projection">
+          <PctInput value={I.incomeGrowthPct} onChange={(v) => set("incomeGrowthPct", v)} min={0} max={12} step={0.5} />
         </Row>
       </details>
 
       <details className="grp">
-        <summary>Selling &amp; costs</summary>
+        <summary><span className="idx">05</span>Selling &amp; one-off costs</summary>
         <SliderRow
           label="Model a sale after year"
           value={I.sellAfterYear}
@@ -282,7 +280,7 @@ export default function InputPanel(props: {
       </details>
 
       <details className="grp">
-        <summary>Serviceability extras</summary>
+        <summary><span className="idx">06</span>Serviceability inputs</summary>
         <Row label="HECS/HELP haircut" note="share of gross income you expect to lose to repayment">
           <PctInput value={I.hecsPct} onChange={(v) => set("hecsPct", v)} min={0} max={20} step={0.5} />
         </Row>
@@ -291,9 +289,6 @@ export default function InputPanel(props: {
         </Row>
         <Row label="Living expenses / month">
           <MoneyInput value={I.livingMonthly} onChange={(v) => set("livingMonthly", v)} step={100} />
-        </Row>
-        <Row label="Income growth / year" note="for the review projection">
-          <PctInput value={I.incomeGrowthPct} onChange={(v) => set("incomeGrowthPct", v)} min={0} max={12} step={0.5} />
         </Row>
       </details>
     </div>

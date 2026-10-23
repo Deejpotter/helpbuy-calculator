@@ -103,7 +103,7 @@ export default function ListingImport(props: { onApply: (patch: ListingPatch) =>
           onKeyDown={(e) => e.key === "Enter" && run(url)}
           aria-label="Listing URL"
         />
-        <button className="btn solid" onClick={() => run(url)} disabled={phase === "loading"}>
+        <button className={"btn solid" + (phase === "loading" ? " loading" : "")} onClick={() => run(url)} disabled={phase === "loading"}>
           {phase === "loading" ? "Reading…" : "Read listing"}
         </button>
       </div>

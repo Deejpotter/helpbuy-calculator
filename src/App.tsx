@@ -168,6 +168,17 @@ export default function App() {
     setTimeout(() => setToast(""), 3000);
   }
 
+  function enableBuyback() {
+    set("buyback", {
+      ...inputs.buyback,
+      enabled: true,
+      startYear: Math.max(1, inputs.buyback.startYear) || 3,
+      percentPerYear: inputs.buyback.percentPerYear || 5,
+    });
+    setToast("Buy-back plan on — see “Path to full ownership” (results section 04).");
+    setTimeout(() => setToast(""), 3200);
+  }
+
   function loadSlot(i: number) {
     const sl = slots[i];
     if (sl?.inputs) {
@@ -211,6 +222,7 @@ export default function App() {
             capacity={{ estimate: capacity, against: structure.buyerLoan }}
             setSellYear={(y) => set("sellAfterYear", y)}
             setFreq={(f) => set("freq", f)}
+            onEnableBuyback={enableBuyback}
           />
           <Compare
             slots={slots}

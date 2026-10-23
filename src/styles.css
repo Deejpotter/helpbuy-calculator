@@ -179,6 +179,75 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .hero {
   border-top: 1px solid var(--hair); margin-top: 2px; padding: 20px 0 18px;
 }
+.hero-head-actions { display: flex; justify-content: flex-end; margin: 14px 0 0; }
+.cta-box {
+  border-left: 3px solid var(--green); background: var(--green-tint); padding: 12px 16px; margin-top: 4px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.cta-box p { margin: 0; font-size: 0.9rem; color: var(--ink-soft); max-width: 46rem; }
+.cta-box strong { color: var(--ink); }
+.cta-box .btn { flex: 0 0 auto; }
+
+.mini-cta {
+  appearance: none; border: 0; background: none; color: var(--green); font: inherit;
+  font-size: 0.78rem; font-weight: 620; padding: 0; cursor: pointer; margin-top: 5px;
+  border-bottom: 1px solid currentColor; border-radius: 0;
+}
+.mini-cta:hover { color: var(--green-deep); transform: translateY(-1px); transition: transform 120ms; }
+
+/* equity journey progress */
+.journey { margin: 14px 0 4px; }
+.journey-track { height: 14px; border-radius: 2px; background: var(--amber-tint); position: relative; overflow: hidden; }
+.journey-fill { height: 100%; background: linear-gradient(90deg, var(--green) 82%, #0e8a70 100%); border-radius: 2px; transition: width 480ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+.journey-caps { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+/* motion layer */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@keyframes drawLine {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes chipIn {
+  from { transform: scale(0.86); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.sec { opacity: 0; }
+.sec.in-view { opacity: 1; animation: fadeUp 300ms ease-out both; }
+.sec-idle { opacity: 1; } /* safety for print & no-IO environments */
+.btn { transition: border-color 120ms, color 120ms, background 120ms, transform 100ms; }
+.btn:not(:disabled):hover { transform: translateY(-1px); }
+.btn:not(:disabled):active { transform: translateY(0) scale(0.985); }
+.btn.loading, .btn.solid.loading { animation: pulse 1.1s ease-in-out infinite; }
+.seg label { transition: background 130ms, color 130ms, box-shadow 130ms; }
+input[type="range"]::-webkit-slider-thumb { transition: transform 120ms, border-color 130ms; }
+input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.18); }
+input[type="number"], input.turl { transition: border-color 140ms; }
+.tinput { transition: border-color 140ms; }
+.wf-bar { transition: width 420ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+.chip { animation: chipIn 220ms ease-out both; }
+.own-bar span { transition: width 480ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+.toast { transition: opacity 200ms, transform 200ms; transform-origin: center; }
+.toast:not(:empty) { animation: fadeUp 200ms ease-out both; }
+figure.chart .ln { stroke-dasharray: 1; stroke-dashoffset: 0; }
+figure.chart.animate .ln.equity, figure.chart.animate .ln.loan, figure.chart.animate .ln.csp {
+  animation: drawLine 900ms ease-out both;
+}
+figure.chart .area { opacity: 1; transition: opacity 300ms; }
+figure.chart.animate .area { animation: fadeUp 700ms 300ms both; }
+.grp[open] .row, .import-paste { animation: fadeUp 220ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .sec { opacity: 1; }
+  figure.chart .ln { stroke-dasharray: none; }
+}
 .hero-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
 .hero-cell { min-width: 0; }
 .hero-cell .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; transform: translateY(-1px); }
@@ -348,4 +417,6 @@ table.mini td:last-child { text-align: right; font-variant-numeric: tabular-nums
   body { background: white; }
   .page { padding: 0; }
   .page::before { display: none; }
+  .sec { opacity: 1; animation: none; }
+  .chip { animation: none; }
 }

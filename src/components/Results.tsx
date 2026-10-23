@@ -1,9 +1,8 @@
-import { aud, num, pct } from "../lib/format";
+import { aud, num, pct, roundTo } from "../lib/format";
 import { DUTY_ESTIMATE_NOTE } from "../lib/duty";
 import { RULES, SRO_LINKS, SOURCES, type StateCode } from "../lib/constants";
-import { roundTo } from "../lib/format";
 import type { Check, Inputs, Projection, Structure } from "../lib/engine";
-import { Section } from "./ui";
+import { Section, useAnimatedNumber } from "./ui";
 import { EquityChart, Waterfall, type WfKind } from "./Charts";
 
 export type LoanSnapshot = {
@@ -29,11 +28,18 @@ export function Results(props: {
   capacity: { estimate: number; against: number };
   setSellYear: (y: number) => void;
   setFreq: (f: "weekly" | "fortnightly" | "monthly") => void;
+  onEnableBuyback: () => void;
 }) {
   const { inputs: I, structure: s, projection: pr, loan: L, checks, dutyEstimate, upfront, capacity } = props;
+  const bs = pr.buybackSummary;
   const stateLink = SRO_LINKS[I.state];
 
   const minBuyback = Math.round((RULES.minBuybackShareOfValue * s.homeValue) / RULES.buybackRoundTo) * RULES.buybackRoundTo;
+  const repayShown = useAnimatedNumber(L.amounts[I.freq]);
+  const stakeShown = useAnimatedNumber((1 - s.govSharePct) * 100);
+  const cspShown = useAnimatedNumber(s.govShare);
+  const buyShown = useAnimatedNumber(minBuyback);
+
   const coverageBase = Math.max(1, s.homeValue);
   const cGov = s.govShare / coverageBase;
   const cLoan = Math.min(s.buyerLoan, s.homeValue) / coverageBase;
@@ -47,24 +53,31 @@ export function Results(props: {
         <div className="hero-grid">
           <div className="hero-cell t-green">
             <h3><span className="dot" />Repayment</h3>
-            <span className="val">{aud(L.amounts[I.freq], { exact: true })}</span>
+            <span className="val num">{aud(repayShown, { exact: true })}</span>
             <span className="per">per {FREQ_UNIT[I.freq]}</span>
             <span className="cap">{aud(L.amounts.monthly)} monthly · loan-free in {num(L.payYears, 1)} yrs</span>
           </div>
           <div className="hero-cell t-green">
             <h3><span className="dot" />Your stake</h3>
-            <span className="val">{pct(1 - s.govSharePct)}</span>
+            <span className="val num">{pct(stakeShown / 100)}</span>
             <span className="cap">{aud(s.buyerShare)} of value · LVR {pct(s.lvr)}</span>
           </div>
           <div className="hero-cell t-amber">
             <h3><span className="dot" />Commonwealth share</h3>
-            <span className="val">{aud(s.govShare)}</span>
+            <span className="val num">{aud(cspShown)}</span>
             <span className="cap">{pct(s.govSharePct)} of value · no interest, no rent</span>
           </div>
           <div className="hero-cell t-ink">
             <h3><span className="dot" />Buy a share back from</h3>
-            <span className="val">{aud(minBuyback)}</span>
+            <span className="val num">{aud(buyShown)}</span>
             <span className="cap">scheme minimum, 5% of today's value</span>
+            {!I.buyback.enabled ? (
+              <button className="mini-cta" onClick={props.onEnableBuyback}>
+                Model a buy-back plan →
+              </button>
+            ) : (
+              <span className="cap c-green">plan on — see “Path to full ownership”</span>
+            )}
           </div>
         </div>
 
@@ -99,10 +112,9 @@ export function Results(props: {
               <td colSpan={2} className="muted">the buffer the bank applies when assessing you</td>
             </tr>
             <tr>
-              <th>Reminders</th>
+              <th>Remember</th>
               <td colSpan={3} className="muted" style={{ textAlign: "left" }}>
-                Interest applies to <strong>your share only</strong> — the Commonwealth's {aud(s.govShare)}
-                {" "}carries no interest and no rent. Interest-only loans are allowed only during construction; P&amp;I otherwise, up to 30 years.
+                Interest applies to <strong>your share only</strong>; interest-only is construction-only under the scheme.
               </td>
             </tr>
           </tbody>
@@ -166,10 +178,47 @@ export function Results(props: {
         ) : null}
       </Section>
 
+      <Section title="Path to full ownership" id="buyback" index="04">
+        {bs.payments > 0 ? (
+          <>
+            <div className="journey">
+              <div className="journey-track">
+                <div className="journey-fill" style={{ width: `${(1 - s.govSharePct) * 100}%` }} />
+              </div>
+              <div className="journey-caps">
+                <span>today · you own {pct(1 - s.govSharePct)}</span>
+                <span>100% — full ownership{bs.fullOwnershipYear ? ` modeled by year ${bs.fullOwnershipYear}` : ""}</span>
+              </div>
+            </div>
+            <table className="flat">
+              <tbody>
+                <tr className="row-you"><th>First buy-back modeled</th><td className="num">yr {bs.firstYear}</td></tr>
+                <tr><th>Payments modeled</th><td className="num">{bs.payments}</td></tr>
+                <tr><th>Total paid to the Commonwealth</th><td className="num strong c-green">{aud(bs.totalPaid)}</td></tr>
+                <tr><th>Funding mode</th><td className="num muted">{I.buyback.fundByLoan ? "loan increases — re-quote repayments with your lender" : "savings"}</td></tr>
+              </tbody>
+            </table>
+            <p className="muted">
+              Each payment must be ≥ 5% of the value <em>at that time</em> (rounded to $1,000), price based on a fresh
+              (paid) valuation — never the original contribution. You can change the schedule in “Plans &amp; assumptions”.
+            </p>
+          </>
+        ) : (
+          <div className="cta-box">
+            <p>
+              You can buy the Commonwealth out <strong>any time, in chunks</strong>: every payment ≥ 5% of the home's
+              value at that point (≈ <strong>{aud(minBuyback)}</strong> today), funded from savings, a loan increase,
+              or both. Over-cap income for two consecutive review FYs can also make a payment required — affordable-gated.
+            </p>
+            <button className="btn solid" onClick={props.onEnableBuyback}>Model a minimum buy-back plan</button>
+          </div>
+        )}
+      </Section>
+
       <Section
         title={I.sellAfterYear > 0 ? `If you sold after year ${I.sellAfterYear}` : "Selling — the payout order"}
         id="sell"
-        index="04"
+        index="05"
         aside={
           <span className="range-inline">
             <input type="range" min={0} max={40} value={I.sellAfterYear} aria-label="Sale year"
@@ -219,7 +268,7 @@ export function Results(props: {
         )}
       </Section>
 
-      <Section title="Cash at settlement & ongoing" id="cash" index="05">
+      <Section title="Cash at settlement & ongoing" id="cash" index="06">
         <table className="flat">
           <tbody>
             <tr className="row-you"><th>Deposit</th><td className="num strong c-green">{aud(s.deposit)}</td></tr>
@@ -243,7 +292,7 @@ export function Results(props: {
         <p className="muted">{DUTY_ESTIMATE_NOTE} Grants and duty concessions can combine with Help to Buy — check your state's first home buyer concessions too.</p>
       </Section>
 
-      <Section title="Serviceability sanity check (rough)" id="capacity" index="06">
+      <Section title="Serviceability sanity check (rough)" id="capacity" index="07">
         <table className="flat">
           <tbody>
             <tr className="row-you"><th>Income inputs → rough capacity</th><td className="num strong c-green">{aud(capacity.estimate)}</td></tr>

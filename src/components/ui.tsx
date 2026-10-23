@@ -1,5 +1,65 @@
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { parseMoney, parsePct } from "../lib/format";
+
+/** Counts a number up from its previous value; respects prefers-reduced-motion. */
+export function useAnimatedNumber(target: number, duration = 380): number {
+  const [display, setDisplay] = useState(target);
+  const fromRef = useRef(target);
+  const rafRef = useRef<number | null>(null);
+  const reduce = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  useEffect(() => {
+    if (reduce || !Number.isFinite(target)) {
+      fromRef.current = target;
+      setDisplay(target);
+      return;
+    }
+    const from = fromRef.current;
+    if (from === target) return;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const v = from + (target - from) * eased;
+      setDisplay(v);
+      fromRef.current = v;
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [target, duration, reduce]);
+
+  return display;
+}
+
+/** Adds .in-view once when the element first scrolls into position (needs a ref). */
+export function useInView(): [(el: HTMLElement | null) => void, boolean] {
+  const [seen, setSeen] = useState(false);
+  const ref = useRef<Element | null>(null);
+  useEffect(() => {
+    if (seen || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setSeen(true);
+            io.disconnect();
+          }
+        }
+      },
+      { threshold: 0.08 },
+    );
+    if (ref.current) io.observe(ref.current);
+    return () => io.disconnect();
+  }, [seen]);
+  const set = (el: HTMLElement | null) => {
+    if (el) ref.current = el;
+  };
+  return [set, seen];
+}
 
 export function Section(props: {
   title: string;
@@ -8,8 +68,9 @@ export function Section(props: {
   aside?: ReactNode;
   children: ReactNode;
 }) {
+  const [ref, seen] = useInView();
   return (
-    <section className="sec" id={props.id}>
+    <section className={"sec" + (seen ? " in-view" : "")} id={props.id} ref={ref}>
       <div className="sec-aside">
         <h2>{props.index ? <span className="lead">{props.index}</span> : null}{props.title}</h2>
         {props.aside}

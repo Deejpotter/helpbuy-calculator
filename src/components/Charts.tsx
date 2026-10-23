@@ -22,7 +22,7 @@ export function EquityChart(props: { rows: YearRow[] }) {
   );
 
   return (
-    <figure className="chart" role="img" aria-label="Chart of your equity, the government share and your loan balance over 40 years">
+    <figure className="chart animate" role="img" aria-label="Chart of your equity, the government share and your loan balance over 40 years">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="gEq" x1="0" y1="0" x2="0" y2="1">
@@ -39,10 +39,11 @@ export function EquityChart(props: { rows: YearRow[] }) {
         {[0, 10, 20, 30, 40].filter((t) => t <= n).map((t) => (
           <text key={t} x={x(Math.min(t, n))} y={H - 8} textAnchor="middle" className="axis">yr {t}</text>
         ))}
+        {/* pathLength normalized to 1 → CSS draw-in animation works for any length */}
         <path d={`${path((r) => r.buyerEquityDollar)} L ${x(last.year)} ${y(0)} L ${x(0)} ${y(0)} Z`} className="area" />
-        <path d={path((r) => r.cspValue)} className="ln csp" />
-        <path d={path((r) => r.loanBalance)} className="ln loan" />
-        <path d={path((r) => r.buyerEquityDollar)} className="ln equity" />
+        <path d={path((r) => r.cspValue)} className="ln csp" pathLength={1} />
+        <path d={path((r) => r.loanBalance)} className="ln loan" pathLength={1} />
+        <path d={path((r) => r.buyerEquityDollar)} className="ln equity" pathLength={1} />
         {lab(last.buyerEquityDollar, "e-eq", 4)}
         {lab(last.cspValue, "e-gov", -8)}
         {lab(last.loanBalance, "e-loan", 14)}

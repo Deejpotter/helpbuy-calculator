@@ -262,6 +262,13 @@ export type YearRow = {
   buyerEquityDollar: number;   // buyerFractionDollar − loanBalance
 };
 
+export type BuybackSummary = {
+  payments: number;           // how many buy-backs were modeled
+  totalPaid: number;          // dollars paid to the Commonwealth across all modeled payments
+  firstYear: number | null;   // year the first payment landed (null = none modeled)
+  fullOwnershipYear: number | null; // year the CSP reached zero (null = not within horizon)
+};
+
 export type SoldAt = {
   year: number;
   salePrice: number;
@@ -271,7 +278,7 @@ export type SoldAt = {
   yourNet: number;            // before tax
 };
 
-export type Projection = { rows: YearRow[]; events: string[]; soldAt: SoldAt | null };
+export type Projection = { rows: YearRow[]; events: string[]; soldAt: SoldAt | null; buybackSummary: BuybackSummary };
 
 /**
  * Anniversary-level projection. Year 0 = settlement.
@@ -325,6 +332,7 @@ export function project(inp: Inputs, s: Structure): Projection {
   let cspPct = s.govSharePct;
   let extraFundedLoan = 0;
   const rows: YearRow[] = [];
+  const buybackSummary: BuybackSummary = { payments: 0, totalPaid: 0, firstYear: null, fullOwnershipYear: null };
 
   // forced buy-back (minimum payment), if modeled
   const forcedYear = inp.incAboveCapFromYear > 0 ? inp.incAboveCapFromYear : -1;
@@ -356,6 +364,9 @@ export function project(inp: Inputs, s: Structure): Projection {
         events.push(
           `Year ${t}: buy-back $${Math.round(pay).toLocaleString()}${inp.buyback.fundByLoan ? " (loan increase)" : " (savings)"} — CSP ${(oldPct * 100).toFixed(2)}% → ${(cspPct * 100).toFixed(2)}%`,
         );
+        buybackSummary.payments++;
+        buybackSummary.totalPaid += pay;
+        if (buybackSummary.firstYear === null) buybackSummary.firstYear = t;
       }
     } else if (t === forcedYear && t > 0 && cspPct > 0.0001) {
       const minPay = Math.min(cspPct * V, Math.round((RULES.minBuybackShareOfValue * V) / RULES.buybackRoundTo) * RULES.buybackRoundTo);
@@ -364,7 +375,13 @@ export function project(inp: Inputs, s: Structure): Projection {
         cspPct = Math.max(0, cspPct - minPay / V);
         cspDollars = cspPct * V;
         events.push(`Year ${t}: minimum forced buy-back $${Math.round(minPay).toLocaleString()} — CSP ${(oldPct * 100).toFixed(2)}% → ${(cspPct * 100).toFixed(2)}% (review · affordability-gated)`);
+        buybackSummary.payments++;
+        buybackSummary.totalPaid += minPay;
+        if (buybackSummary.firstYear === null) buybackSummary.firstYear = t;
       }
+    }
+    if (buybackSummary.fullOwnershipYear === null && cspPct <= 0.0001 && t > 0) {
+      buybackSummary.fullOwnershipYear = t;
     }
 
     const loanBalance = Math.max(0, baseBalance[t] + extraFundedLoan);
@@ -398,7 +415,7 @@ export function project(inp: Inputs, s: Structure): Projection {
     };
   }
 
-  return { rows, events, soldAt };
+  return { rows, events, soldAt, buybackSummary };
 }
 
 function simulateBalance(
