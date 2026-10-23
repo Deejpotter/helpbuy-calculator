@@ -1,7 +1,11 @@
+import { lazy, Suspense, useState } from "react";
 import type { Inputs } from "../lib/engine";
-import { SX, type StateCode } from "../lib/constants";
+import { borrowingCapacity } from "../lib/engine";
+import { RBA_NOTE, SX, type StateCode } from "../lib/constants";
 import { aud, num } from "../lib/format";
 import { MoneyInput, PctInput, Row, NumberInput, Seg, SelectRaw, SliderRow } from "./ui";
+
+const AreaChecker = lazy(() => import("./AreaChecker"));
 
 export default function InputPanel(props: {
   inputs: Inputs;
@@ -37,6 +41,9 @@ export default function InputPanel(props: {
 
       <details open className="grp">
         <summary><span className="idx">02</span>The property</summary>
+        <Suspense fallback={<p className="hist">Loading the area check...</p>}>
+          <AreaChecker onApply={(r) => { set("state", r.state); set("region", r.region); }} />
+        </Suspense>
         <Row label="Home type" note="new = 40% max government share">
           <Seg
             name="home-type"
@@ -98,6 +105,27 @@ export default function InputPanel(props: {
         <Row label="Most the bank will lend you" note="unsure? Use plan 06 below as a rough check">
           <MoneyInput id="loan" value={I.maxLoan} onChange={(v) => set("maxLoan", v)} step={5000} wide />
         </Row>
+        <p className="hist">
+          <button
+            className="mini-cta"
+            onClick={() =>
+              set(
+                "maxLoan",
+                borrowingCapacity({
+                  grossIncome: I.combinedIncome,
+                  livingMonthly: I.livingMonthly,
+                  otherMonthlyDebt: I.otherMonthlyDebt,
+                  hecsPct: I.hecsPct,
+                  ratePct: I.ratePct,
+                  termYears: I.termYears,
+                }),
+              )
+            }
+          >
+            Use the estimate from my income
+          </button>{" "}
+          - a rough figure at the stressed rate; the lender's assessment wins.
+        </p>
         <Row label="Government contribution" note="covers what's left, up to 30% existing or 40% new">
           <Seg
             name="gov-mode"
@@ -142,7 +170,7 @@ export default function InputPanel(props: {
             ]}
           />
         </Row>
-        <Row label="Interest rate" note="typical standard variable; not a quote">
+        <Row label="Interest rate" note={RBA_NOTE}>
           <PctInput id="rate" value={I.ratePct} onChange={(v) => set("ratePct", v)} min={0} max={12} step={0.05} />
         </Row>
         <Row label="Repayment frequency">

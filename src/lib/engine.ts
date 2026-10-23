@@ -560,7 +560,7 @@ export const initialInputs: Inputs = {
   govShareMode: "gap",
   customGovSharePct: 30,
   termYears: 30,
-  ratePct: 5.5,
+  ratePct: 6.55,
   freq: "monthly",
   extraRepayment: 0,
   growthPct: 3,

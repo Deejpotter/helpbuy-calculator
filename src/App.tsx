@@ -16,6 +16,7 @@ import { SOURCES, type StateCode } from "./lib/constants";
 import { aud } from "./lib/format";
 import InputPanel from "./components/InputPanel";
 import ListingImport from "./components/ListingImport";
+import Wizard from "./components/Wizard";
 import { Results, type LoanSnapshot } from "./components/Results";
 import Compare, { summarize, type Slot } from "./components/Compare";
 import { TermsPage, PrivacyPage } from "./components/Legal";
@@ -23,6 +24,7 @@ import { Section } from "./components/ui";
 
 const SLOTS_KEY = "helpbuy.studio.slots.v1";
 const STATE_KEY = "helpbuy.studio.state.v1";
+const ONBOARD_KEY = "helpbuy.studio.onboarded.v1";
 
 /* --------------------------- local persistence ----------------------------- */
 
@@ -106,6 +108,11 @@ export default function App() {
 }
 
 function Planner() {
+  const [showWizard, setShowWizard] = useState(() => {
+    // A shared link means you already know what you want: skip the wizard.
+    if (location.hash.length > 2) return false;
+    try { return localStorage.getItem(ONBOARD_KEY) !== "done"; } catch { return false; }
+  });
   const [inputs, setInputs] = useState<Inputs>(() => {
     const hash = location.hash.replace(/^#/, "");
     // Shared link wins → then whatever you last had on this device → then the example.
@@ -130,6 +137,22 @@ function Planner() {
   }, [slots]);
 
   const set = <K extends keyof Inputs>(k: K, v: Inputs[K]) => setInputs((p) => ({ ...p, [k]: v }));
+
+  function patchInputs(p: Partial<Inputs>) {
+    setInputs((prev) => ({ ...prev, ...p, buyback: { ...prev.buyback, ...(p.buyback ?? {}) } }));
+  }
+
+  function finishWizard() {
+    try { localStorage.setItem(ONBOARD_KEY, "done"); } catch { /* ignore */ }
+    setShowWizard(false);
+    setToast("You're set up - every number is still editable.");
+    setTimeout(() => setToast(""), 3200);
+  }
+
+  function restartWizard() {
+    try { localStorage.removeItem(ONBOARD_KEY); } catch { /* ignore */ }
+    setShowWizard(true);
+  }
 
   const structure = useMemo(
     () =>
@@ -256,9 +279,13 @@ function Planner() {
         <a href="/terms">terms of use</a> and <a href="/privacy">privacy policy</a>.
       </p>
 
-      <ListingImport onApply={(patch) => setInputs((p) => ({ ...p, ...patch, buyback: { ...p.buyback } }))} />
+      {showWizard ? (
+        <Wizard inputs={inputs} set={patchInputs} done={finishWizard} />
+      ) : (
+        <>
+          <ListingImport onApply={patchInputs} />
 
-      <main className="main-grid">
+          <main className="main-grid">
         <aside className="col-inputs" aria-label="Inputs">
           <InputPanel inputs={inputs} set={set} maxAffordable={structure.maxAffordablePrice} />
         </aside>
@@ -285,6 +312,7 @@ function Planner() {
           />
           <Section title="Notes" id="notes">
             <ul className="plain notes-list">
+              <li><button className="mini-cta" onClick={restartWizard}>Run the guided setup again</button> - the three step intro: who is buying, the home, the loan.</li>
               <li><strong>Where your numbers live:</strong> this browser only. The open scenario and the A / B / C
                 slots sit in localStorage, nothing is sent anywhere, and there's no account. A shared link simply
                 puts your numbers in the URL; Start over clears the saved scenario.</li>
@@ -326,6 +354,8 @@ function Planner() {
           </footer>
         </div>
       </main>
+      </>
+      )}
 
       <div className="toast" aria-live="polite">{toast}</div>
     </div>

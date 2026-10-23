@@ -405,6 +405,27 @@ table.mini td:last-child { text-align: right; font-variant-numeric: tabular-nums
 }
 .toast:empty { opacity: 0; }
 
+/* wizard */
+.wizard {
+  position: fixed; inset: 0; z-index: 40; background: var(--paper); overflow-y: auto;
+  display: grid; place-items: start center; padding: 8vh 20px 60px;
+}
+.wizard-col { width: 100%; max-width: 30rem; }
+.wizard h2 { margin: 4px 0 18px; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+.wizard-progress {
+  margin: 0 0 6px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--amber);
+}
+.wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; }
+.wizard .mini-cta { margin-top: 18px; }
+.wizard-enter { animation: fadeUp 260ms ease-out both; }
+
+/* area checker */
+.areachk { padding: 2px 0 8px; border-bottom: 1px dashed var(--hair); margin-bottom: 8px; }
+.area-results { margin: 6px 0 0; }
+.area-results li { padding: 5px 0 5px 16px; }
+.area-results .mini-cta { margin-left: 8px; }
+
 /* notice bar under the header */
 .notice {
   margin: 0; padding: 10px 0 0; border-bottom: 1px solid var(--hair); font-size: 0.8rem;
