@@ -312,12 +312,15 @@ export function project(inp: Inputs, s: Structure): Projection {
   const g = inp.growthPct / 100;
 
   const imp = inp.improvement;
-  const horizon = Math.max(
-    40,
-    inp.sellAfterYear,
-    imp ? imp.year : 0,
-    inp.buyback.enabled ? inp.buyback.startYear + 45 : 0,
-    inp.incAboveCapFromYear + 2,
+  const horizon = Math.min(
+    60,
+    Math.max(
+      40,
+      inp.sellAfterYear,
+      imp ? imp.year : 0,
+      inp.buyback.enabled ? inp.buyback.startYear + 20 : 0,
+      inp.incAboveCapFromYear + 2,
+    ),
   );
 
   // value path starts at the settled value (min of price and initial valuation - clause 6.3)

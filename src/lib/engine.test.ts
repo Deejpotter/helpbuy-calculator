@@ -110,6 +110,32 @@ describe("structureFromFinance", () => {
     expect(s.valueBase).toBe(725_000);
   });
 
+  it("keeps the horizon sane and the loan honest for a late-start funded buy-back plan", () => {
+    // the user's shape: plan starts in year 35 -> horizon must NOT balloon to 80+
+    const inp = baseInputs({
+      homeValue: 430_000,
+      deposit: 12_000,
+      maxLoan: 289_000,
+      govShareMode: "custom",
+      customGovSharePct: 30,
+      growthPct: 7,
+      ratePct: 6.55,
+      buyback: { enabled: true, startYear: 35, percentPerYear: 5, fundByLoan: true },
+      sellAfterYear: 0,
+    });
+    const s = structureCustom({ homeValue: 430_000, deposit: 12_000, customGovSharePct: 30, homeType: "existing", state: "VIC", region: "major" });
+    const pr = project(inp, s);
+    const lastRow = pr.rows[pr.rows.length - 1];
+    expect(pr.rows.length - 1).toBeLessThanOrEqual(60); // horizon capped
+    expect(pr.buybackSummary.fullOwnershipYear).toBeLessThanOrEqual(45); // 30% at 5%/yr finishes fast
+    // borrowings ride the loan balance: the loan line must NOT end at zero
+    expect(lastRow.loanBalance).toBeGreaterThan(0);
+    // and after the full exit the government share is zero
+    expect(lastRow.cspValue).toBeCloseTo(0, 4);
+    // equity = full value minus the borrowed buy-back money
+    expect(lastRow.buyerEquityDollar).toBeCloseTo(lastRow.homeValue - lastRow.loanBalance, 0);
+  });
+
   it("checks price caps by state and region", () => {
     const inCap = structureFromFinance({
       homeValue: 1_300_000, deposit: 60_000, maxLoan: 850_000,
