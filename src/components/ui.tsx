@@ -183,7 +183,7 @@ export function Seg<T extends string>(props: {
     <fieldset className="seg" role="radiogroup" aria-label={props.label}>
       <legend className="sr-only">{props.label}</legend>
       {props.options.map((o) => (
-        <label key={o.value} title={o.title} className={o.value === props.value ? "seg-on" : ""}>
+        <label key={o.value} title={o.title} className={o.value === props.value ? "on" : ""}>
           <input
             type="radio"
             name={props.name}

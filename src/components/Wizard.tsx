@@ -26,7 +26,7 @@ export default function Wizard(props: { set: (patch: Partial<Inputs>) => void; i
 
   return (
     <div className="wizard" role="dialog" aria-modal="true" aria-label="Guided setup">
-      <div className="wizard-col">
+      <div className="wizard-col wizard-enter">
         <p className="wizard-progress">Step {step} of 3</p>
 
         {step === 1 ? (
