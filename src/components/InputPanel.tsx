@@ -196,6 +196,21 @@ export default function InputPanel(props: {
         <Row label="Property growth per year">
           <PctInput value={I.growthPct} onChange={(v) => set("growthPct", v)} min={-10} max={15} step={0.25} />
         </Row>
+        <Row label="Growth presets" note="scenarios, not forecasts">
+          <Seg
+            name="growth-presets"
+            label="Growth presets"
+            value={String(I.growthPct)}
+            onChange={(v) => set("growthPct", Number(v))}
+            options={[
+              { value: "0", label: "Bear 0%" },
+              { value: "1.5", label: "Soft 1.5%" },
+              { value: "3", label: "Base 3%" },
+              { value: "5.5", label: "Strong 5.5%" },
+              { value: "7", label: "Hot 7%" },
+            ]}
+          />
+        </Row>
         <Row label="Buy-back plan">
           <Seg
             name="bb"
