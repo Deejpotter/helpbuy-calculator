@@ -31,13 +31,14 @@ the browser calls directly).
 
 ## Bundle (measured, current)
 
-| File | Size | Gzip |
+| File | Size on disk | Gzip |
 | --- | --- | --- |
-| dist/index.html | 1.01 kB | 0.59 kB |
-| dist/assets/*.css | 17.7 kB | 4.6 kB |
-| dist/assets/vendor-*.js (all dependencies, cached long-term) | 221.7 kB | 69.0 kB |
-| dist/assets/index-*.js (app code) | 62.5 kB | 20.7 kB |
-| Total JS | 284.2 kB | 89.6 kB |
+| dist/index.html | 1.0 kB | 0.6 kB |
+| dist/assets/*.css | 18.8 kB | 5.0 kB |
+| dist/assets/vendor-*.js (all dependencies, cached long-term) | 216.5 kB | 69.0 kB |
+| dist/assets/index-*.js (app code) | 77.5 kB | 25.8 kB |
+| dist/assets/AreaChecker-*.js (lazy: bundled official cap lookup) | 84.4 kB | 35.2 kB |
+| Up-front JS (vendor + app) | 294.0 kB | 94.8 kB |
 
 Vite splits `react` and `react-dom` into their own chunk (`manualChunks`), so app changes do
 not bust the framework cache. Minification is esbuild, hashing blows away stale caches, and
