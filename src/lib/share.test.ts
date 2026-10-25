@@ -13,7 +13,7 @@ describe("share links", () => {
       maxLoan: 456_441,
       ratePct: 6.1,
       growthPct: 5.5,
-      buyback: { enabled: true, startYear: 3, percentPerYear: 7.5, everyYears: 1, fundByLoan: true },
+      buyback: { enabled: true, startYear: 3, percentPerYear: 7.5, everyYears: 1, loanTermYears: 0, fundByLoan: true },
       improvement: { year: 4, cost: 30_000, valueUplift: 35_000 },
       sellAfterYear: 12,
     });

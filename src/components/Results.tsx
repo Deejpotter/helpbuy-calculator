@@ -309,13 +309,33 @@ export function Results(props: {
                   </td>
                 </tr>
                 {I.buyback.fundByLoan && bs.borrowed > 0 ? (
-                  <tr>
-                    <th>The new loans add</th>
-                    <td className="num">
-                      {aud(bs.extraRepayment)} per {FREQ_UNIT[I.freq]}
-                      <span className="muted"> - not the payment amount, that is borrowed</span>
-                    </td>
-                  </tr>
+                  <>
+                    <tr>
+                      <th>Each new loan</th>
+                      <td className="num">
+                        about {aud(bs.borrowed / bs.payments)} at {num(I.ratePct, 2)}%
+                        <span className="muted">
+                          {bs.newLoanTermYears > 0
+                            ? ` - ${aud(bs.perLoanRepayment)} per ${FREQ_UNIT[I.freq]} over ${bs.newLoanTermYears} years`
+                            : ` - ${aud(bs.perLoanRepayment)} per ${FREQ_UNIT[I.freq]}, the same as your first loan`}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Cleared in</th>
+                      <td className="num">
+                        {payoffLabel(bs.perLoanPayoffYears)}
+                        <span className="muted"> from the day it starts</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>While it runs</th>
+                      <td className="num">
+                        {aud(bs.perLoanRepayment)} per {FREQ_UNIT[I.freq]} on top of your first loan
+                        <span className="muted"> - the buy-back itself is borrowed, not paid in cash</span>
+                      </td>
+                    </tr>
+                  </>
                 ) : null}
               </tbody>
             </table>
@@ -447,4 +467,14 @@ export function Results(props: {
 
 function nextFreq(f: "weekly" | "fortnightly" | "monthly") {
   return f === "weekly" ? "fortnightly" : f === "fortnightly" ? "monthly" : "weekly";
+}
+
+/** "about 11 months" / "about 30 years" for buy-back loan payoff times. */
+function payoffLabel(years: number): string {
+  if (!Number.isFinite(years) || years <= 0) return "not within the projection";
+  if (years < 2) {
+    const months = Math.max(1, Math.round(years * 12));
+    return `about ${months} month${months === 1 ? "" : "s"}`;
+  }
+  return `about ${num(years, 1)} years`;
 }

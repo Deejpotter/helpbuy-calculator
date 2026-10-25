@@ -294,6 +294,31 @@ export default function InputPanel(props: {
                 ]}
               />
             </Row>
+            {I.buyback.fundByLoan ? (
+              <>
+                <Row label="Repaying each new loan" note="the same payment as your first loan clears a chunk in about a year">
+                  <Seg
+                    name="bbterm"
+                    label="Repaying each new loan"
+                    value={I.buyback.loanTermYears > 0 ? "term" : "same"}
+                    onChange={(v) => set("buyback", { ...I.buyback, loanTermYears: v === "term" ? I.termYears : 0 })}
+                    options={[
+                      { value: "same", label: "Same payment" },
+                      { value: "term", label: "Over a term" },
+                    ]}
+                  />
+                </Row>
+                {I.buyback.loanTermYears > 0 ? (
+                  <Row label="Term for each new loan" note="years - shorter means a bigger payment, cleared sooner">
+                    <NumberInput
+                      value={I.buyback.loanTermYears}
+                      onChange={(v) => set("buyback", { ...I.buyback, loanTermYears: Math.min(30, Math.max(1, v)) })}
+                      min={1}
+                    />
+                  </Row>
+                ) : null}
+              </>
+            ) : null}
           </>
         ) : null}
         <Row label="Improvement (optional)" note="over $21k must be notified; the share adjusts so you keep the gain">

@@ -27,6 +27,7 @@ export type BuybackPlan = {
   startYear: number;       // first year after settlement (= year 1..)
   percentPerYear: number;  // of the property's value in that year (>= minimum 5%)
   everyYears: number;      // years between payments: 1 = every year, 30 = after each new loan is repaid
+  loanTermYears: number;   // 0 = repay each new loan at the first loan's repayment, else spread over this many years
   fundByLoan: boolean;     // else funded from savings
 };
 
@@ -297,6 +298,9 @@ export type BuybackSummary = {
   fullOwnershipYear: number | null; // year the CSP reached zero (null = not within horizon)
   borrowed: number;           // dollars funded by new loans (0 when paid from savings)
   extraRepayment: number;     // per chosen payment period, summed across the new loans
+  newLoanTermYears: number;   // 0 = each new loan runs on the first loan's repayment
+  perLoanRepayment: number;   // per chosen payment period, for one buy-back loan
+  perLoanPayoffYears: number; // how long one buy-back loan takes to clear
 };
 
 export type SoldAt = {
@@ -335,8 +339,12 @@ export function project(inp: Inputs, s: Structure): Projection {
       40,
       inp.sellAfterYear,
       imp ? imp.year : 0,
-      // enough room for up to eight chunks (a 40% share at 5% each), within the 60 year cap
-      inp.buyback.enabled ? inp.buyback.startYear + Math.max(1, inp.buyback.everyYears || 1) * 8 : 0,
+      // enough room for up to eight chunks plus the last new loan's own life, within the 60 year cap
+      inp.buyback.enabled
+        ? inp.buyback.startYear +
+            Math.max(1, inp.buyback.everyYears || 1) * 8 +
+            (inp.buyback.loanTermYears > 0 ? inp.buyback.loanTermYears : 6)
+        : 0,
       inp.incAboveCapFromYear + 2,
     ),
   );
@@ -363,11 +371,15 @@ export function project(inp: Inputs, s: Structure): Projection {
   }
 
   let cspPct = s.govSharePct;
-  // each loan-funded buy-back is its own new loan: same rate and term, repaid on its own clock
+  // each loan-funded buy-back is its own new loan at the same rate. By default it is repaid on the
+  // same per-period repayment as the first loan, which clears a chunk fast; or spread over a term.
+  const newLoanTerm = inp.buyback.loanTermYears > 0 ? Math.min(30, inp.buyback.loanTermYears) : 0;
+  const mainRepayment = loanStats.amount; // per period, including any extra repayment
   const newLoans: Array<{ year: number; amount: number }> = [];
   const rows: YearRow[] = [];
   const buybackSummary: BuybackSummary = {
-    payments: 0, years: [], totalPaid: 0, firstYear: null, fullOwnershipYear: null, borrowed: 0, extraRepayment: 0,
+    payments: 0, years: [], totalPaid: 0, firstYear: null, fullOwnershipYear: null,
+    borrowed: 0, extraRepayment: 0, newLoanTermYears: newLoanTerm, perLoanRepayment: 0, perLoanPayoffYears: 0,
   };
 
   // forced buy-back (minimum payment), if modeled
@@ -436,7 +448,7 @@ export function project(inp: Inputs, s: Structure): Projection {
     }
 
     const newLoanBalance = newLoans.reduce(
-      (sum, loan) => sum + newLoanBalanceAt(loan, t, inp.ratePct, inp.termYears, inp.freq),
+      (sum, loan) => sum + newLoanBalanceAt(loan, t, inp.ratePct, newLoanTerm, inp.freq, mainRepayment),
       0,
     );
     const loanBalance = Math.max(0, baseBalance[t] + newLoanBalance);
@@ -454,11 +466,13 @@ export function project(inp: Inputs, s: Structure): Projection {
   }
 
   buybackSummary.borrowed = newLoans.reduce((sum, loan) => sum + loan.amount, 0);
-  // the new loans are ordinary principal and interest loans: the extra repayment setting stays on the first loan
-  buybackSummary.extraRepayment = newLoans.reduce(
-    (sum, loan) => sum + repaymentFull(loan.amount, inp.ratePct, inp.termYears, inp.freq, 0).amount,
-    0,
-  );
+  if (newLoans.length > 0) {
+    const perLoan = buybackSummary.borrowed / newLoans.length;
+    buybackSummary.perLoanRepayment =
+      newLoanTerm > 0 ? repaymentFull(perLoan, inp.ratePct, newLoanTerm, inp.freq, 0).amount : mainRepayment;
+    buybackSummary.extraRepayment = buybackSummary.perLoanRepayment * newLoans.length;
+    buybackSummary.perLoanPayoffYears = payoffYears(perLoan, buybackSummary.perLoanRepayment, inp.ratePct, inp.freq);
+  }
 
   let soldAt: SoldAt | null = null;
   if (inp.sellAfterYear > 0 && inp.sellAfterYear <= horizon) {
@@ -501,8 +515,9 @@ function simulateBalance(
 }
 
 /**
- * Balance of one buy-back loan at a given year. Every loan-funded buy-back is a new loan at the
- * user's rate and term, principal and interest, with no extra repayments of its own.
+ * Balance of one buy-back loan at a given year. A buy-back loan is a new principal and interest
+ * loan at the user's rate: by default it runs on the first loan's repayment (so a small chunk
+ * clears in months), or over the term the user picked.
  */
 function newLoanBalanceAt(
   loan: { year: number; amount: number },
@@ -510,12 +525,35 @@ function newLoanBalanceAt(
   ratePct: number,
   termYears: number,
   freq: Freq,
+  mainRepayment: number,
 ): number {
   const elapsed = t - loan.year;
   if (elapsed < 0) return 0;
   if (elapsed === 0) return loan.amount;
   const ppy = PERIODS_PER_YEAR[freq];
-  return simulateBalance(loan.amount, ratePct, termYears, ppy, freq, 0, Math.floor(elapsed * ppy));
+  const payment = termYears > 0 ? repaymentFull(loan.amount, ratePct, termYears, freq, 0).amount : mainRepayment;
+  const i = ratePct / 100 / ppy;
+  let bal = loan.amount;
+  for (let p = 0; p < Math.floor(elapsed * ppy); p++) {
+    bal = bal + bal * i - payment;
+    if (bal <= 0) return 0;
+  }
+  return Math.max(0, bal);
+}
+
+/** Years until a loan clears at a fixed payment, capped like the rest of the engine. */
+function payoffYears(loan: number, payment: number, ratePct: number, freq: Freq): number {
+  const ppy = PERIODS_PER_YEAR[freq];
+  const i = ratePct / 100 / ppy;
+  if (loan <= 0 || payment <= 0 || payment <= loan * i) return 0; // never clears (or nothing owed)
+  let bal = loan;
+  let periods = 0;
+  const cap = 41 * ppy;
+  while (bal > 0 && periods < cap) {
+    bal = bal + bal * i - payment;
+    periods++;
+  }
+  return periods / ppy;
 }
 
 /* ---------------------------- serviceability ----------------------------- */
@@ -695,7 +733,7 @@ export const initialInputs: Inputs = {
   growthPct: 3,
   incomeGrowthPct: 2.5,
   incAboveCapFromYear: 0,
-  buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, fundByLoan: true },
+  buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: true },
   improvement: null,
   sellAfterYear: 0,
   agentPct: 2.5,

@@ -70,9 +70,10 @@ anything in.
      government share in dollars (up to a 60 year horizon), plus a milestones table and any
      modelled events.
    - 04 Path to full ownership: with a plan on, an equity journey bar (today to 100 percent),
-     the years the payments land in, the size of each one, the total across all of them, the
-     amount borrowed and the repayment the new loans add. Buy-backs are funded by a new loan by
-     default (switch it to savings if you prefer), and the plan can pay yearly, every N years, one
+     the years the payments land in, the size of each one, the total across all of them, what each
+     new loan costs, how long it takes to clear, and the repayment it adds. Buy-backs are funded by
+     a new loan by default, repaid at your first loan's repayment unless you spread it over a term
+     (switch the funding to savings if you prefer), and the plan can pay yearly, every N years, one
      chunk per loan, or the whole share at once. Without a plan there's a one-click "model a
      buy-back plan".
    - 05 Selling: slide the sale year and see the payout waterfall (agent, loan payout,

@@ -33,7 +33,7 @@ const baseInputs = (over: Partial<Inputs> = {}): Inputs => ({
   growthPct: 3,
   incomeGrowthPct: 2.5,
   incAboveCapFromYear: 0,
-  buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, fundByLoan: false },
+  buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: false },
   improvement: null,
   sellAfterYear: 0,
   agentPct: 2.5,
@@ -124,7 +124,7 @@ describe("structureFromFinance", () => {
       customGovSharePct: 30,
       growthPct: 7,
       ratePct: 6.55,
-      buyback: { enabled: true, startYear: 35, percentPerYear: 5, everyYears: 1, fundByLoan: true },
+      buyback: { enabled: true, startYear: 35, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: true },
       sellAfterYear: 0,
     });
     const s = structureCustom({ homeValue: 430_000, deposit: 12_000, customGovSharePct: 30, homeType: "existing", state: "VIC", region: "major" });
@@ -146,7 +146,7 @@ describe("structureFromFinance", () => {
     const inp = baseInputs({
       growthPct: 0,
       ratePct: 6,
-      buyback: { enabled: true, startYear: 5, percentPerYear: 50, everyYears: 1, fundByLoan: true },
+      buyback: { enabled: true, startYear: 5, percentPerYear: 50, everyYears: 1, loanTermYears: 0, fundByLoan: true },
       sellAfterYear: 0,
     });
     const s = structureFromFinance({
@@ -157,20 +157,21 @@ describe("structureFromFinance", () => {
     const borrowed = 240_000; // the whole government share, bought in one go
     expect(pr.buybackSummary.borrowed).toBeCloseTo(borrowed, 4);
     expect(pr.buybackSummary.totalPaid).toBeCloseTo(borrowed, 4);
-    expect(pr.buybackSummary.extraRepayment).toBeGreaterThan(0);
-    // the new loan exists from its year and falls every year after that
+    // by default the new loan runs on the first loan's repayment, not a fresh 30 year term
+    const mainRepay = repaymentFull(544_000, 6, 30, "monthly", 0).amount;
+    expect(pr.buybackSummary.perLoanRepayment).toBeCloseTo(mainRepay, 2);
+    expect(pr.buybackSummary.perLoanPayoffYears).toBeLessThan(9); // a 240k chunk at a 544k loan's repayment
     const at = (y: number) => pr.rows.find((r) => r.year === y)!.loanBalance;
     expect(at(5)).toBeGreaterThan(borrowed);
     expect(at(10)).toBeLessThan(at(5));
-    expect(at(20)).toBeLessThan(at(10));
-    // the first loan is gone by year 30, but the new loan is still running until year 35
-    expect(at(31)).toBeGreaterThan(0);
-    expect(at(31)).toBeLessThan(at(30));
-    expect(at(35)).toBeCloseTo(0, 0);
+    // the chunk itself is gone well before the first loan
+    expect(at(20)).toBeLessThan(600_000);
+    expect(at(30)).toBe(0); // both loans finished by year 30
+    expect(at(29)).toBeGreaterThan(0);
   });
 
   it("keeps the first-loan amortisation smooth (no cliff at payoff)", () => {
-    const inp = baseInputs({ growthPct: 0, ratePct: 6, termYears: 30, buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, fundByLoan: true } });
+    const inp = baseInputs({ growthPct: 0, ratePct: 6, termYears: 30, buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: true } });
     const s = structureFromFinance({
       homeValue: 800_000, deposit: 16_000, maxLoan: 544_000,
       homeType: "existing", state: "NSW", region: "major",
@@ -307,7 +308,7 @@ describe("project", () => {
 
   it("plans buy-backs at ≥5% of the value, rounded to $1,000, and reduces the CSP", () => {
     const inp = baseInputs({
-      buyback: { enabled: true, startYear: 1, percentPerYear: 5, everyYears: 1, fundByLoan: false },
+      buyback: { enabled: true, startYear: 1, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: false },
       growthPct: 0,
     });
     const s = structureFromFinance({ homeValue: 800_000, deposit: 16_000, maxLoan: 544_000, homeType: "existing", state: "NSW", region: "major" });
@@ -364,7 +365,7 @@ describe("project", () => {
   });
 
   it("puts a minimum forced buy-back at the chosen income-overrun year", () => {
-    const inp = baseInputs({ growthPct: 0, sellAfterYear: 0, incAboveCapFromYear: 3, buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, fundByLoan: false } });
+    const inp = baseInputs({ growthPct: 0, sellAfterYear: 0, incAboveCapFromYear: 3, buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: false } });
     const s = structureFromFinance({ homeValue: 800_000, deposit: 16_000, maxLoan: 544_000, homeType: "existing", state: "NSW", region: "major" });
     const pr = project(inp, s);
     expect(pr.rows[2].cspValue).toBe(240_000);
@@ -528,7 +529,7 @@ describe("edge cases: the projection", () => {
 
   it("leaves the loan untouched when buy-backs come from savings", () => {
     const savings = project(
-      baseInputs({ growthPct: 0, buyback: { enabled: true, startYear: 5, percentPerYear: 5, everyYears: 1, fundByLoan: false } }),
+      baseInputs({ growthPct: 0, buyback: { enabled: true, startYear: 5, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: false } }),
       structure(),
     );
     const none = project(baseInputs({ growthPct: 0 }), structure());
@@ -539,7 +540,7 @@ describe("edge cases: the projection", () => {
 
   it("raises a buy-back below the minimum up to 5% of the value", () => {
     const pr = project(
-      baseInputs({ growthPct: 0, buyback: { enabled: true, startYear: 5, percentPerYear: 1, everyYears: 1, fundByLoan: false } }),
+      baseInputs({ growthPct: 0, buyback: { enabled: true, startYear: 5, percentPerYear: 1, everyYears: 1, loanTermYears: 0, fundByLoan: false } }),
       structure(),
     );
     expect(pr.events[0]).toContain("$40,000"); // 5% of 800k, rounded to $1,000
@@ -552,7 +553,7 @@ describe("edge cases: the projection", () => {
         growthPct: 0,
         improvement: { year: 0, cost: 50_000, valueUplift: 50_000 },
         incAboveCapFromYear: 0,
-        buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, fundByLoan: false },
+        buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: false },
       }),
       structure(),
     );
@@ -571,7 +572,7 @@ describe("edge cases: the projection", () => {
     const pr = project(
       baseInputs({
         growthPct: 5,
-        buyback: { enabled: true, startYear: 5, percentPerYear: 5, everyYears: 1, fundByLoan: true },
+        buyback: { enabled: true, startYear: 5, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: true },
       }),
       structure(),
     );
@@ -611,7 +612,7 @@ describe("edge cases: buy-back cadence", () => {
       homeType: "existing", state: "VIC", region: "major",
     });
   const plan = (over: Partial<Inputs["buyback"]> = {}) => ({
-    enabled: true, startYear: 30, percentPerYear: 5, everyYears: 1, fundByLoan: true, ...over,
+    enabled: true, startYear: 30, percentPerYear: 5, everyYears: 1, loanTermYears: 0, fundByLoan: true, ...over,
   });
 
   it("pays every year by default, clearing the share in a few years", () => {
@@ -645,6 +646,26 @@ describe("edge cases: buy-back cadence", () => {
     // one big new loan, and its repayment is shown rather than hidden
     expect(pr.buybackSummary.borrowed).toBeCloseTo(pr.buybackSummary.totalPaid, 2);
     expect(pr.buybackSummary.extraRepayment).toBeGreaterThan(0);
+  });
+
+  it("clears each chunk on the first loan's repayment by default, or spreads it over a term", () => {
+    const same = project(baseInputs({ growthPct: 0, buyback: plan({ percentPerYear: 18 }) }), structure());
+    const mainPay = repaymentFull(440_000, baseInputs().ratePct, 30, "monthly", 0).amount;
+    expect(same.buybackSummary.newLoanTermYears).toBe(0);
+    expect(same.buybackSummary.perLoanRepayment).toBeCloseTo(mainPay, 2);
+    // a ~$99k chunk on a $440k loan's repayment takes a few years, not thirty
+    expect(same.buybackSummary.perLoanPayoffYears).toBeGreaterThan(2);
+    expect(same.buybackSummary.perLoanPayoffYears).toBeLessThan(6);
+
+    const spread = project(
+      baseInputs({ growthPct: 0, buyback: plan({ percentPerYear: 18, loanTermYears: 10 }) }),
+      structure(),
+    );
+    expect(spread.buybackSummary.perLoanRepayment).toBeLessThan(same.buybackSummary.perLoanRepayment);
+    expect(spread.buybackSummary.perLoanPayoffYears).toBeGreaterThan(10);
+    expect(spread.buybackSummary.perLoanPayoffYears).toBeLessThan(10.3); // a rounding period over the term
+    expect(spread.rows[40].loanBalance).toBeGreaterThan(0); // started in year 30
+    expect(spread.rows[41].loanBalance).toBe(0);
   });
 
   it("never pays more than the share that is actually left", () => {

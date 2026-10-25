@@ -75,10 +75,11 @@ Each check in results section 02 maps to a rule:
   (1 = yearly; setting it to the loan term gives one chunk per loan). Paying a percent at least
   equal to the remaining share buys the whole thing in one payment. Savings-funded payments leave
   the loan alone. A loan-funded payment is
-  modelled as a **new loan of its own** - same rate and term, principal and interest, amortising
-  from its own year - so a payment made after the first loan is repaid still appears as debt and
-  the balance falls again rather than sitting flat. The extra repayment shown is the sum of the
-  new loans' repayments; the lender's real quote will differ. Funding this way can bring LMI back
+  modelled as a **new loan of its own** - same rate, and by default the same per-period repayment as
+  the first loan (so a $23,000 chunk on a $360,000 loan clears in about a year), or spread over the
+  term you set. It amortises separately, so a payment made after the first loan is repaid still
+  appears as debt and the balance falls again rather than sitting flat. The per-loan repayment and
+  payoff time are reported; the lender's real quote will differ. Funding this way can bring LMI back
   if the loan then exceeds 80 percent of value, per the TMD.
 - **Improvement adjustment (GT 6.6, Customer Guide example).** `share% post = share% pre *
   valuePre / valuePost`, so the kept dollar value of the government share stays constant and
