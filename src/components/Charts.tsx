@@ -79,7 +79,7 @@ export function EquityChart(props: { rows: YearRow[] }) {
       </svg>
       <figcaption className="legend">
         <span className="key equity" /> Your stake in the value
-        <span className="key loan" /> Loan balance
+        <span className="key loan" /> Loan balance (every loan)
         <span className="key csp" /> Commonwealth share ($)
       </figcaption>
     </figure>

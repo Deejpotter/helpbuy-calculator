@@ -35,11 +35,13 @@ necessarily an estimate (duty, borrowing capacity, default rate, growth) the app
 1. Duty: per-state rough scales on the buyer's share only, with SRO links + manual override.
    Real concessions (e.g. QLD <700k FHB exemption, NSW <800k/VIC <600k-type regimes, ACT ~fully
    exempt <=$1M) can zero it - the user enters the true number when they have it.
-2. Default rate 5.5% is a placeholder in an editable field; no live rate feed.
+2. Default rate 6.55% is an editable assumption (RBA cash 4.60% plus a typical margin); no live
+   rate feed.
 3. Borrowing capacity: surplus-based heuristic (income - living - debts - HECS haircut, margin
    17%, +3% stress). Formal assessment differs per lender.
-4. Buy-back funding by loan increase adds the amount to the balance; the real repayment must be
-   re-quoted by the lender (noted in the projection).
+4. Buy-back funding by loan is modelled as a new loan per payment: same rate and term, principal
+   and interest, amortised from its own year. The real repayment and approval are the lender's,
+   so the extra repayment is indicative (noted in the results).
 5. Sale assumes share-of-price = share-of-valuation (the Guide takes the greater of the two).
 6. Growth/income paths are annual compounding assumptions, not forecasts.
 

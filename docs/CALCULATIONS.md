@@ -69,9 +69,12 @@ Each check in results section 02 maps to a rule:
   Guide, a payment must reduce the share by at least 5 percentage points of the value at that
   time (rounded to $1,000) unless it is the final full buy-out; the plan's percent is clamped
   to that minimum, and once the remaining share sits at or under 5 percent, the full remaining
-  amount is repaid. Savings-funded payments leave the loan alone; loan-funded ones add the
-  payment to your balance (the app warns that this can bring LMI back if the loan then exceeds
-  80 percent of value, per the TMD).
+  amount is repaid. Savings-funded payments leave the loan alone. A loan-funded payment is
+  modelled as a **new loan of its own** - same rate and term, principal and interest, amortising
+  from its own year - so a payment made after the first loan is repaid still appears as debt and
+  the balance falls again rather than sitting flat. The extra repayment shown is the sum of the
+  new loans' repayments; the lender's real quote will differ. Funding this way can bring LMI back
+  if the loan then exceeds 80 percent of value, per the TMD.
 - **Improvement adjustment (GT 6.6, Customer Guide example).** `share% post = share% pre *
   valuePre / valuePost`, so the kept dollar value of the government share stays constant and
   the uplift is all yours. Tested with the Simon and Ken example: 20 percent of $700,000 with

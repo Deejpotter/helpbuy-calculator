@@ -55,7 +55,7 @@ export function Results(props: {
             <h3><span className="dot" />Repayment</h3>
             <span className="val num">{aud(repayShown, { exact: true })}</span>
             <span className="per">per {FREQ_UNIT[I.freq]}</span>
-            <span className="cap">{aud(L.amounts.monthly)} if monthly - loan paid off in {num(L.payYears, 1)} years</span>
+            <span className="cap">{aud(L.amounts.monthly)} if monthly - {I.buyback.enabled && I.buyback.fundByLoan ? "first loan" : "loan"} paid off in {num(L.payYears, 1)} years</span>
           </div>
           <div className="hero-cell t-green">
             <h3><span className="dot" />Your share</h3>
@@ -196,14 +196,31 @@ export function Results(props: {
                 <tr className="row-you"><th>First buy-back modeled</th><td className="num">yr {bs.firstYear}</td></tr>
                 <tr><th>Payments modeled</th><td className="num">{bs.payments}</td></tr>
                 <tr><th>Total paid to the Commonwealth</th><td className="num strong c-green">{aud(bs.totalPaid)}</td></tr>
-                <tr><th>Funding mode</th><td className="num muted">{I.buyback.fundByLoan ? "by borrowing more - your lender re-quotes the repayment" : "from savings"}</td></tr>
+                <tr>
+                  <th>Funding</th>
+                  <td className="num muted">
+                    {I.buyback.fundByLoan
+                      ? `a new loan each time - ${aud(bs.borrowed)} borrowed across ${bs.payments === 1 ? "1 loan" : `${bs.payments} loans`}`
+                      : "from savings"}
+                  </td>
+                </tr>
+                {I.buyback.fundByLoan && bs.borrowed > 0 ? (
+                  <tr>
+                    <th>The new loans add</th>
+                    <td className="num">{aud(bs.extraRepayment)} per {FREQ_UNIT[I.freq]}</td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
             {I.buyback.fundByLoan ? (
               <p className="muted">
-                Heads up: funding a buy-back by borrowing can bring Lender's Mortgage Insurance back if the bigger loan
-                goes over 80% of the value - the scheme's Target Market Determination allows that choice. A fresh
-                valuation is needed for each payment and it must be made within 90 days of the valuation date.
+                Each buy-back is its own new loan at your rate and term, repaid principal and interest. That keeps the
+                balance honest: it falls year by year, and a payment made after the first loan is repaid still shows
+                up as debt. It also matters in practice - once that first loan is gone, a buy-back can only be paid
+                from savings or a new loan, and the lender has to approve and re-quote the repayment each time. Funding
+                this way can bring Lender's Mortgage Insurance back if the bigger loan goes over 80% of the value (the
+                scheme's Target Market Determination allows that choice). A fresh valuation is needed for each payment
+                and it must be made within 90 days of the valuation date.
               </p>
             ) : null}
             <p className="muted">
@@ -217,7 +234,7 @@ export function Results(props: {
             <p>
               You can buy the government out <strong>any time, in one go or bit by bit</strong>. Each payment must be
               at least 5% of the home's value at that point - about <strong>{aud(minBuyback)}</strong> today. Pay it
-              from savings, by borrowing more, or both. If your income sits over the cap two tax years in a row, a
+              from savings, by a new loan, or both. If your income sits over the cap two tax years in a row, a
               buy-back can become required, but only if you can afford it.
             </p>
             <button className="btn solid" onClick={props.onEnableBuyback}>Model a minimal buy-back plan</button>

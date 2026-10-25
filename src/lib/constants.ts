@@ -42,7 +42,7 @@ export function incomeCapFor(applicantType: "single" | "singleParent" | "joint")
   }
 }
 
-/** Property price caps by state Ã- region (capital city / regional centre vs rest of state). */
+/** Property price caps by state x region (capital city / regional centre vs rest of state). */
 export const PRICE_CAPS: Record<StateCode, { major: number | null; rest: number | null }> = {
   NSW: { major: 1_300_000, rest: 800_000 },
   VIC: { major: 950_000, rest: 650_000 },

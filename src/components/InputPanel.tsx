@@ -237,7 +237,7 @@ export default function InputPanel(props: {
                 step={0.5}
               />
             </Row>
-            <Row label="Funded by">
+            <Row label="Funded by" note="each buy-back is its own new loan, at your rate and term">
               <Seg
                 name="bbf"
                 label="Funded by"
@@ -245,7 +245,7 @@ export default function InputPanel(props: {
                 onChange={(v) => set("buyback", { ...I.buyback, fundByLoan: v === "loan" })}
                 options={[
                   { value: "savings", label: "Savings" },
-                  { value: "loan", label: "Loan increase" },
+                  { value: "loan", label: "New loan" },
                 ]}
               />
             </Row>

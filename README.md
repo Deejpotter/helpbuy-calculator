@@ -65,8 +65,10 @@ anything in.
    - 03 Your share over time: a year by year chart of your equity, loan balance and the
      government share in dollars (up to a 60 year horizon), plus a milestones table and any
      modelled events.
-   - 04 Path to full ownership: with a plan on, an equity journey bar (today to 100 percent)
-     and a summary of the modelled payments; without one, a one-click "model a buy-back plan".
+   - 04 Path to full ownership: with a plan on, an equity journey bar (today to 100 percent),
+     a summary of the modelled payments, the total borrowed and the repayment the new loans add;
+     buy-backs are funded by a new loan by default (switch it to savings if you prefer), and
+     without a plan there's a one-click "model a buy-back plan".
    - 05 Selling: slide the sale year and see the payout waterfall (agent, loan payout,
      government share, then you) and a horizons table.
    - 06 Cash at settlement: deposit plus duty estimate plus other costs, and monthly ongoing

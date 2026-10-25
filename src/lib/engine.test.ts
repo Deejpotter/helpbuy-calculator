@@ -2,6 +2,7 @@
 import {
   borrowingCapacity,
   eligibility,
+  initialInputs,
   project,
   repaymentFull,
   structureCustom,
@@ -79,7 +80,7 @@ describe("structureFromFinance", () => {
       homeValue: 1_200_000, deposit: 40_000, maxLoan: 700_000,
       homeType: "existing", state: "NSW", region: "major",
     });
-    expect(eng.shortfall).toBe(100_000); // gap 460k − 30%Ã-1.2M=360k
+    expect(eng.shortfall).toBe(100_000); // gap 460k - 30%x1.2M=360k
     const nw = structureFromFinance({
       homeValue: 1_200_000, deposit: 40_000, maxLoan: 700_000,
       homeType: "new", state: "NSW", region: "major",
@@ -132,8 +133,50 @@ describe("structureFromFinance", () => {
     expect(lastRow.loanBalance).toBeGreaterThan(0);
     // and after the full exit the government share is zero
     expect(lastRow.cspValue).toBeCloseTo(0, 4);
-    // equity = full value minus the borrowed buy-back money
+    // equity = full value minus the new loan still outstanding
     expect(lastRow.buyerEquityDollar).toBeCloseTo(lastRow.homeValue - lastRow.loanBalance, 0);
+  });
+
+  it("defaults a planned buy-back to a new loan, and each new loan repays on its own clock", () => {
+    expect(initialInputs.buyback.fundByLoan).toBe(true);
+    // one big payment at year 5 clears the 30% share, so there is exactly one new loan to follow
+    const inp = baseInputs({
+      growthPct: 0,
+      ratePct: 6,
+      buyback: { enabled: true, startYear: 5, percentPerYear: 50, fundByLoan: true },
+      sellAfterYear: 0,
+    });
+    const s = structureFromFinance({
+      homeValue: 800_000, deposit: 16_000, maxLoan: 544_000,
+      homeType: "existing", state: "NSW", region: "major",
+    });
+    const pr = project(inp, s);
+    const borrowed = 240_000; // the whole government share, bought in one go
+    expect(pr.buybackSummary.borrowed).toBeCloseTo(borrowed, 4);
+    expect(pr.buybackSummary.totalPaid).toBeCloseTo(borrowed, 4);
+    expect(pr.buybackSummary.extraRepayment).toBeGreaterThan(0);
+    // the new loan exists from its year and falls every year after that
+    const at = (y: number) => pr.rows.find((r) => r.year === y)!.loanBalance;
+    expect(at(5)).toBeGreaterThan(borrowed);
+    expect(at(10)).toBeLessThan(at(5));
+    expect(at(20)).toBeLessThan(at(10));
+    // the first loan is gone by year 30, but the new loan is still running until year 35
+    expect(at(31)).toBeGreaterThan(0);
+    expect(at(31)).toBeLessThan(at(30));
+    expect(at(35)).toBeCloseTo(0, 0);
+  });
+
+  it("keeps the first-loan amortisation smooth (no cliff at payoff)", () => {
+    const inp = baseInputs({ growthPct: 0, ratePct: 6, termYears: 30, buyback: { enabled: false, startYear: 5, percentPerYear: 5, fundByLoan: true } });
+    const s = structureFromFinance({
+      homeValue: 800_000, deposit: 16_000, maxLoan: 544_000,
+      homeType: "existing", state: "NSW", region: "major",
+    });
+    const pr = project(inp, s);
+    const at = (y: number) => pr.rows.find((r) => r.year === y)!.loanBalance;
+    expect(at(29)).toBeGreaterThan(0);
+    expect(at(29)).toBeLessThan(45_000); // a 30 year loan at 6% has one year of payments left in year 29
+    expect(at(30)).toBe(0);
   });
 
   it("checks price caps by state and region", () => {
@@ -196,7 +239,7 @@ describe("project", () => {
     // year 1: value 800k, min payment 5% = 40k (rounded to 1k) from CSP 240k → 200k (25%)
     expect(pr.rows[1].cspValue).toBe(200_000);
     expect(pr.rows[1].cspPct).toBeCloseTo(0.25, 9);
-    // hits zero-ish over years: 240 − 5 Ã- 40 = 40 at year 5; then full remaining share (40k ≤5% rule) at year 6
+    // hits zero-ish over years: 240 - 5 x 40 = 40 at year 5; then full remaining share (40k ≤5% rule) at year 6
     expect(pr.rows[6].cspValue).toBeCloseTo(0, 6);
     expect(pr.rows[6].cspPct).toBeCloseTo(0, 6);
     // buy-back summary: 6 payments totalling the whole 240k share, full ownership reached in year 6
@@ -206,7 +249,7 @@ describe("project", () => {
     expect(pr.buybackSummary.fullOwnershipYear).toBe(6);
   });
 
-  it("applies the official improvement formula (20% Ã- 700k / 760k = 18.42%)", () => {
+  it("applies the official improvement formula (20% x 700k / 760k = 18.42%)", () => {
     const inp = baseInputs({
       homeValue: 700_000,
       govShareMode: "custom",
@@ -217,7 +260,7 @@ describe("project", () => {
     const s = structureCustom({ homeValue: 700_000, deposit: 21_000, customGovSharePct: 20, homeType: "existing", state: "NSW", region: "major" });
     expect(s.govShare).toBe(140_000);
     const pr = project(inp, s);
-    // at year 1 value = 760k, CSP % = 20% Ã- 700/760 → dollars still 140k → 18.42%
+    // at year 1 value = 760k, CSP % = 20% x 700/760 → dollars still 140k → 18.42%
     expect(pr.rows[1].cspValue).toBeCloseTo(140_000, 0);
     expect(pr.rows[1].cspPct).toBeCloseTo(0.1842105, 6);
   });
