@@ -42,8 +42,10 @@ anything in.
    - 01 Your situation: single, single parent or joint, plus combined taxable income. Income is
      checked against the FY 2026-27 caps ($103,000 single; $165,000 single parent or joint).
    - 02 The property: state or territory, capital city or rest of state, new or existing, price,
-     optional initial valuation, deposit, and the most the bank will lend. The government
-     contribution mode is here too: default "bridge the gap", or set a share manually.
+     optional initial valuation, deposit, and the most the bank will lend. That bank figure is a
+     ceiling, not the loan: the plan borrows only what the purchase needs and keeps the loan at
+     80 percent of value or less, which is what keeps LMI away. The government share mode is here
+     too: default "bridge the gap", or set a share manually.
    - 03 The loan: term (20, 25 or 30 years, principal and interest), interest rate, Payment
      frequency and extra repayments.
    - 04 Plans: property growth assumption, buy-back plan, one modelled improvement, and the year

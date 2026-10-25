@@ -11,6 +11,8 @@ export default function InputPanel(props: {
   inputs: Inputs;
   set: <K extends keyof Inputs>(k: K, v: Inputs[K]) => void;
   maxAffordable: number;
+  plannedLoan: number;
+  plannedShare: number;
 }) {
   const { inputs: I, set } = props;
 
@@ -102,15 +104,14 @@ export default function InputPanel(props: {
         <Row label="Your deposit" note="keep about $5-6k more aside for duty and setup costs">
           <MoneyInput id="deposit" value={I.deposit} onChange={(v) => set("deposit", v)} step={1000} wide />
         </Row>
-        <Row label="Most the bank will lend you" note="it's a ceiling, not a target - you can borrow less">
+        <Row label="Most the bank will lend you" note="a limit, not the loan - the plan borrows only what it needs">
           <MoneyInput id="loan" value={I.maxLoan} onChange={(v) => set("maxLoan", v)} step={5000} wide />
         </Row>
-        {I.maxLoan >= I.homeValue - I.deposit ? (
-          <p className="hist warn-line">
-            That's more than this home needs ({aud(Math.max(0, I.homeValue - I.deposit))} covers it on its own), so
-            there'd be nothing for the government to bridge. You don't have to borrow it all: ask for a share and the
-            loan gets smaller - which is what keeps LMI away. Section 02 shows the exact share.
-          </p>
+        {props.plannedLoan > 0 ? (
+          <p className="hist">
+            The plan borrows <strong>{aud(props.plannedLoan)}</strong> of that
+            {props.plannedShare > 0 ? <> and the government share covers <strong>{aud(props.plannedShare)}</strong>.</> : "."}
+            {I.maxLoan > props.plannedLoan ? " Borrowing less than the limit keeps LMI away." : ""}          </p>
         ) : null}
         <p className="hist">
           <button

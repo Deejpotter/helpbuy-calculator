@@ -303,7 +303,13 @@ function Planner() {
 
           <main className="main-grid">
         <aside className="col-inputs" aria-label="Inputs">
-          <InputPanel inputs={inputs} set={set} maxAffordable={structure.maxAffordablePrice} />
+          <InputPanel
+            inputs={inputs}
+            set={set}
+            maxAffordable={structure.maxAffordablePrice}
+            plannedLoan={structure.buyerLoan}
+            plannedShare={structure.govShare}
+          />
         </aside>
         <div className="col-results">
           <Results

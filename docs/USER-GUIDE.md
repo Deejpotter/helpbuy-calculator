@@ -47,14 +47,17 @@ the example back at any time.
   New South Wales, Newcastle and Lake Macquarie, Illawarra, Central Coast, Mid North Coast,
   Coffs Harbour and Grafton, and Richmond Tweed. Price caps are not indexed, so always confirm
   your exact suburb and postcode with the official postcode tool linked in the results.
-- **Purchase price, initial valuation, deposit, most the bank will lend.** Valuation is
-  optional: if a valuer values the home below the price, the government's share percentage is
-  measured on the lower figure (clause 6.3 of the General Terms), so add it when you have it.
-- **Government contribution.** "Bridge the gap" means: contribution = price minus deposit minus
-  loan, up to the 30 or 40 percent limit. If that structure would leave the loan above 80
-  percent of value, the contribution increases so the loan comes in at 80 percent or less
-  (clause 3.2(b)); your loan may end up smaller than the bank's maximum. Or set the share
-  yourself with the slider (between 5 and 30 / 40 percent).
+- **Purchase price, initial valuation, deposit, most the bank will lend.** The bank figure is a
+  ceiling, not the loan: the plan borrows only what the purchase needs, and says so under the
+  field. Valuation is optional: if a valuer values the home below the price, the government's
+  share percentage is measured on the lower figure (clause 6.3 of the General Terms), so add it
+  when you have it.
+- **Government share.** "Bridge the gap" means: share = price minus deposit minus the loan you
+  need, up to the 30 or 40 percent limit, and never less than the amount that keeps your loan at
+  80 percent of the value (clause 3.2(b)) - that's what keeps LMI away. A bigger bank limit
+  therefore makes the loan smaller, not bigger. If your deposit alone covers 20 percent, the
+  share is zero and you don't need the scheme. Or set the share yourself with the slider (5 to
+  30 / 40 percent).
 
 ## 03 The loan
 

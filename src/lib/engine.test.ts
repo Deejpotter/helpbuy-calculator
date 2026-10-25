@@ -97,7 +97,7 @@ describe("structureFromFinance", () => {
     });
     expect(s.buyerLoan).toBe(640_000);
     expect(s.lvr).toBeCloseTo(0.8, 9);
-    expect(s.govShare).toBe(144_000);
+    expect(s.govShare).toBeCloseTo(144_000, 4);
     expect(s.shortfall).toBe(0);
   });
 
@@ -179,17 +179,39 @@ describe("structureFromFinance", () => {
     expect(at(30)).toBe(0);
   });
 
-  it("explains LMI in plain words and offers the share that removes it", () => {
-    // the exact shape from the user's screenshot: the bank's maximum is more than the home needs
-    const inp = baseInputs({
-      state: "VIC", homeValue: 450_000, deposit: 16_000, maxLoan: 456_441,
-      govShareMode: "gap", homeType: "existing", growthPct: 3,
-    });
+  it("treats the bank's maximum as a ceiling, not the loan", () => {
+    // exactly the shape from the user's screenshot: the limit is more than the home needs
     const s = structureFromFinance({
       homeValue: 450_000, deposit: 16_000, maxLoan: 456_441,
       homeType: "existing", state: "VIC", region: "major",
     });
-    expect(s.govShare).toBe(0);
+    // the loan is what the home needs at 80% of value, not the bank's limit
+    expect(s.buyerLoan).toBeLessThanOrEqual(360_000);
+    expect(s.lvr).toBeLessThanOrEqual(0.8 + 1e-9);
+    // the shortfall is the 20% the deposit doesn't cover: 90k - 16k
+    expect(s.govShare).toBeCloseTo(74_000, 4);
+    expect(s.govSharePct).toBeCloseTo(74_000 / 450_000, 6);
+
+    const inp = baseInputs({
+      state: "VIC", homeValue: 450_000, deposit: 16_000, maxLoan: 456_441, govShareMode: "gap",
+    });
+    const checks = eligibility(inp, s);
+    expect(checks.filter((c) => c.ok === "no")).toHaveLength(0);
+    expect(checks.find((c) => c.id === "lvr")!.ok).toBe("yes");
+    expect(checks.find((c) => c.id === "csp")!.ok).toBe("yes");
+  });
+
+  it("explains LMI in plain words and offers the share that removes it", () => {
+    // a share set too low leaves the loan above 80%: the app has to name LMI and give the fix
+    const inp = baseInputs({
+      state: "VIC", homeValue: 450_000, deposit: 16_000, maxLoan: 456_441,
+      govShareMode: "custom", customGovSharePct: 5, homeType: "existing", growthPct: 3,
+    });
+    const s = structureCustom({
+      homeValue: 450_000, deposit: 16_000, customGovSharePct: 5,
+      homeType: "existing", state: "VIC", region: "major",
+    });
+    expect(s.lvr).toBeGreaterThan(0.8);
 
     const checks = eligibility(inp, s);
     const lvr = checks.find((c) => c.id === "lvr")!;
@@ -197,16 +219,10 @@ describe("structureFromFinance", () => {
     expect(lvr.detail).toMatch(/Lender's Mortgage Insurance/);
     expect(lvr.detail).toMatch(/protects the bank/);
     expect(lvr.action).toMatch(/16\.5% government share/);
-    expect(lvr.action).toMatch(/\$74,000 more deposit/);
+    expect(lvr.action).toMatch(/\$51,500 more deposit/);
     expect(lvr.fix).toMatchObject({ kind: "share", value: 16.5 });
 
-    // the zero-share row points at the same fix
-    const csp = checks.find((c) => c.id === "csp")!;
-    expect(csp.ok).toBe("check");
-    expect(csp.action).toMatch(/A 16\.5% share brings the loan down to \$360,000/);
-    expect(csp.fix).toMatchObject({ kind: "share" });
-
-    // applying the fix clears both: loan at 80% of value, share inside the 5-30% range
+    // applying the fix clears it: loan at 80% of value, share inside the 5-30% range
     const inp2 = { ...inp, govShareMode: "custom" as const, customGovSharePct: 16.5 };
     const s2 = structureCustom({
       homeValue: 450_000, deposit: 16_000, customGovSharePct: 16.5,

@@ -115,9 +115,12 @@ export function capFor(state: StateCode, region: "major" | "rest"): number | nul
 }
 
 /**
- * "Gap mode": you contribute the maximum deposit you can and borrow the most the bank lends;
- * the government bridges the remainder, up to 30%/40%.
- * Official example (Customer Guide): $800k home, $16k deposit, $544k loan -> CSP $240k (30%), LVR 68%.
+ * "Gap mode": the bank's limit is a CEILING, never the amount borrowed.
+ * The government bridges what the deposit and that ceiling can't cover, but never less than the
+ * share that keeps the loan at 80% of the value (clause 3.2(b)) - so a generous bank limit does
+ * not turn into a loan that attracts LMI. If the deposit alone covers 20%, the share is zero.
+ * Official example (Customer Guide): $800k home, $16k deposit, $544k limit -> CSP $240k (30%),
+ * loan $544k, LVR 68%.
  */
 export function structureFromFinance(p: {
   homeValue: number;
@@ -136,14 +139,14 @@ export function structureFromFinance(p: {
 
   // General Terms clause 6.1: CC = max(0, min(MaxCC, PP - Loan - Deposit)); CC <= 0 -> not eligible.
   const rawCc = Math.max(0, V - D - L);
-  // Clause 3.2(b): if that structure would leave the loan above 80% of the value, the
-  // government increases its contribution (within the maximum) so the loan lands at 80% or less.
-  let cc = rawCc;
-  if (rawCc > 0) {
-    const lvrFix = 0.2 * V - D;
-    if (lvrFix > cc) cc = Math.min(maxCsp * V, lvrFix);
-  }
-  const govShare = Math.min(cc, maxCsp * V);
+  // Clause 3.2(b): the share also has to keep the loan at 80% of the value or less. This holds
+  // even when the bank would lend the whole gap: the buyer is free to borrow less, and 80%+ means LMI.
+  const lvrFloor = Math.max(0, valueBase - RULES.maxLvr * valueBase - D);
+  let cc = Math.max(rawCc, lvrFloor);
+  // if the government is involved at all, its share is at least the scheme's 5% minimum
+  if (cc > 0) cc = Math.max(cc, CSP.min * V);
+  cc = Math.min(cc, maxCsp * V);
+  const govShare = cc;
   const buyerLoan = Math.max(0, V - D - govShare);
   // Percentages are stated off min(price, initial valuation) - clause 6.3.
   const govSharePct = valueBase > 0 ? (govShare / V) * (V / valueBase) : 0;
@@ -552,7 +555,7 @@ export function eligibility(inp: Inputs, s: Structure): Check[] {
   // round the suggested share UP so the loan really does land at or under 80%
   const shareFixPct = Math.min(maxCsp * 100, Math.ceil(sharePctToFixLoan * 10) / 10);
   const shareFixDollars = (shareFixPct / 100) * V;
-  const depositToFixLoan = Math.max(0, vb * (1 - RULES.maxLvr) - s.govShare);
+  const depositToFixLoan = Math.max(0, vb - RULES.maxLvr * vb - s.govShare);
   const bankCoversAll = s.govShare <= 0;
   const shareFixFits =
     shareToFixLoan > 0 &&
@@ -607,16 +610,16 @@ export function eligibility(inp: Inputs, s: Structure): Check[] {
     label: `Government share between 5% and ${maxCsp * 100}%`,
     ok: s.scans.cspInRange ? "yes" : "check",
     detail: bankCoversAll
-      ? `Your loan and deposit already cover the whole price, so the government would own nothing. The scheme only fills the gap between your deposit, your loan and the price - it can't hand you cash.`
+      ? `Your deposit alone covers the 20% of value that banks want, so the government would own nothing. There's no gap for it to fill, and this models a normal loan with no LMI.`
       : s.govSharePct > maxCsp + 1e-9 || s.govSharePct < CSP.min - 1e-9
         ? `The share comes out at ${pct1(s.govSharePct)}, outside the scheme's 5% to ${maxCsp * 100}% range.`
         : `The government would own ${pct1(s.govSharePct)} of the home (${m(s.govShare)}). It charges no interest and no rent. When you sell, or buy the share back, it takes that share of the value on the day - so it rises and falls with the market.`,
     action: bankCoversAll
-      ? `You don't have to borrow the bank's maximum. ${shareFixFits ? `A ${shareFixPct.toFixed(1)}% share brings the loan down to ${m(targetLoan)} and skips LMI, which is usually the whole reason to use the scheme.` : "Add to the deposit or lower the loan if you want the scheme to do something."}`
+      ? `Nothing to fix. If you'd rather use the scheme - a smaller loan, and no interest on the government's share - set a share yourself in the Government share control.`
       : s.scans.cspInRange
         ? undefined
         : `Set the share back inside 5% to ${maxCsp * 100}%, or switch to Bridge the gap and let the app work it out.`,
-    fix: !s.scans.cspInRange && bankCoversAll && shareFixFits
+    fix: !s.scans.cspInRange && !bankCoversAll && shareFixFits
       ? { kind: "share", value: shareFixPct, label: `Model a ${shareFixPct.toFixed(1)}% share` }
       : undefined,
   });

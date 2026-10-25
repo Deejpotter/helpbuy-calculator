@@ -13,14 +13,15 @@ Inputs: purchase price `P`, initial valuation `V0` (optional, defaults to the pr
   Commonwealth Share Percentage is measured on the lesser of purchase price and valuation, so
   paying above the valuation raises the government's percentage.
 - **Contribution (clause 6.1).** `CC = max(0, min(MaxCC, P - L - D))` where `MaxCC` is 30
-  percent of price for an existing home and 40 percent for new. If `CC <= 0` you cannot join
-  the scheme (the app shows the gap test as a review chip: the lender's capacity test would
-  likely rule you out since you can already afford it).
-- **Top-up (clause 3.2(b)).** If that structure would leave the loan above 80 percent of value,
-  the contribution increases (still within the maximum) so the loan lands at 80 percent or
-  less: `CC = max(CC, 0.2P - D)`. Your loan can end up smaller than the bank's maximum.
+  percent of price for an existing home and 40 percent for new. `L` here is the bank's *limit*,
+  not the amount borrowed: the plan only borrows what the purchase needs.
+- **Top-up (clause 3.2(b)), always applied.** The share also has to keep the loan at 80 percent
+  of value or less, so `CC = max(CC, 0.2 * valueBase - D)` whenever that is larger, even when
+  the bank limit already covers the whole gap. A generous limit therefore shrinks the loan
+  instead of turning into LMI. If the deposit alone reaches 20 percent, `CC` is zero: no scheme
+  needed. When a share exists it is at least the scheme's 5 percent minimum.
 - **Derived.** `govShareDollars = CC`, `govSharePct = CC / valueBase`,
-  `buyerLoan = P - D - govShareDollars` capped by the bank maximum and the 80 percent rule,
+  `buyerLoan = P - D - govShareDollars` (never more than the bank limit, by construction),
   `lvr = buyerLoan / valueBase`.
 - **Shortfall.** If the maximum contribution cannot cover the gap
   (`P - D - L - MaxCC > 0`), the app says so and prints the official maximum purchase price

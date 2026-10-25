@@ -309,7 +309,6 @@ table.flat tbody tr:last-child th, table.flat tbody tr:last-child td { border-bo
 table.flat td.muted, td.muted { color: var(--muted); text-align: right; }
 
 /* checks */
-.warn-line { border-left: 2px solid var(--amber); padding-left: 10px; color: var(--ink-soft); }
 ul.checks { list-style: none; margin: 0; padding: 0; }
 ul.checks li {
   display: grid; grid-template-columns: 20px 1fr; gap: 10px; padding: 11px 0;
