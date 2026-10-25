@@ -1,15 +1,18 @@
 ﻿import { describe, expect, it } from "vitest";
 import {
   borrowingCapacity,
+  capFor,
   eligibility,
   initialInputs,
   project,
+  repayment,
   repaymentFull,
   structureCustom,
   structureFromFinance,
+  upfrontCash,
   type Inputs,
 } from "./engine";
-import type { StateCode } from "./constants";
+import { incomeCapFor, type StateCode } from "./constants";
 
 const baseInputs = (over: Partial<Inputs> = {}): Inputs => ({
   applicantType: "single",
@@ -377,6 +380,291 @@ describe("borrowingCapacity", () => {
     expect(b).toBeGreaterThan(a);
     const stressed = borrowingCapacity({ grossIncome: 100_000, livingMonthly: 2_500, otherMonthlyDebt: 0, hecsPct: 0, ratePct: 7, termYears: 30 });
     expect(stressed).toBeLessThan(a);
+  });
+});
+
+describe("edge cases: the structure itself", () => {
+  const structure = (over: Partial<Parameters<typeof structureFromFinance>[0]> = {}) =>
+    structureFromFinance({
+      homeValue: 800_000, deposit: 16_000, maxLoan: 544_000,
+      homeType: "existing", state: "NSW", region: "major", ...over,
+    });
+
+  it("asks for no government share when the deposit alone reaches 20%", () => {
+    const s = structure({ deposit: 200_000, maxLoan: 600_000 });
+    expect(s.govShare).toBe(0);
+    expect(s.buyerLoan).toBe(600_000);
+    expect(s.lvr).toBeCloseTo(0.75, 9);
+    expect(s.scans.cspInRange).toBe(false); // nothing to bridge: modelled as a normal loan
+  });
+
+  it("keeps the share inside the scheme range when the deposit is tiny", () => {
+    const s = structure({ deposit: 0, maxLoan: 600_000 });
+    expect(s.govShare).toBeGreaterThanOrEqual(0.05 * 800_000);
+    expect(s.govShare).toBeLessThanOrEqual(0.30 * 800_000);
+    expect(s.lvr).toBeCloseTo(0.75, 9);
+    expect(s.scans.depositOk).toBe(false);
+  });
+
+  it("tops the share up to the 5% minimum rather than a sliver", () => {
+    // 8k of gap and a 4k LMI floor would both be under 5% of the price
+    const s = structure({ deposit: 156_000, maxLoan: 636_000 });
+    expect(s.govShare).toBe(40_000);
+    expect(s.govSharePct).toBeCloseTo(0.05, 9);
+  });
+
+  it("reports a shortfall when even the maximum share cannot close the gap", () => {
+    const s = structure({ deposit: 16_000, maxLoan: 100_000 });
+    expect(s.govShare).toBe(240_000); // 30% cap
+    expect(s.shortfall).toBe(444_000); // 800k - 16k - 100k - 240k
+    expect(s.buyerLoan).toBeGreaterThan(s.homeValue - s.deposit - s.govShare - 1);
+  });
+
+  it("measures on the price when the valuation is higher, and on the valuation when lower", () => {
+    expect(structure({ valuation0: 900_000 }).valueBase).toBe(800_000);
+    expect(structure({ homeValue: 750_000, valuation0: 725_000 }).valueBase).toBe(725_000);
+  });
+
+  it("allows 40% for a new home and clamps a custom share to the maximum", () => {
+    const newHome = structure({ homeType: "new", deposit: 16_000, maxLoan: 400_000 });
+    expect(newHome.govShare).toBeCloseTo(0.4 * 800_000, 6);
+
+    const tooBig = structureCustom({
+      homeValue: 800_000, deposit: 16_000, customGovSharePct: 45,
+      homeType: "existing", state: "NSW", region: "major",
+    });
+    expect(tooBig.govSharePct).toBeCloseTo(0.3, 9);
+    expect(tooBig.buyerLoan).toBe(800_000 - 16_000 - 240_000);
+  });
+
+  it("flags a custom share under the 5% minimum", () => {
+    const s = structureCustom({
+      homeValue: 800_000, deposit: 16_000, customGovSharePct: 2,
+      homeType: "existing", state: "NSW", region: "major",
+    });
+    expect(s.govSharePct).toBeCloseTo(0.02, 9);
+    expect(s.scans.cspInRange).toBe(false);
+    expect(s.lvr).toBeCloseTo((800_000 - 16_000 - 16_000) / 800_000, 9);
+  });
+
+  it("looks up caps, including the regions that have none", () => {
+    expect(capFor("VIC", "major")).toBe(950_000);
+    expect(capFor("VIC", "rest")).toBe(650_000);
+    expect(capFor("ACT", "rest")).toBeNull();
+    expect(capFor("JBT", "major")).toBeNull();
+  });
+
+  it("knows the income cap for every applicant type", () => {
+    expect(incomeCapFor("single")).toBe(103_000);
+    expect(incomeCapFor("singleParent")).toBe(165_000);
+    expect(incomeCapFor("joint")).toBe(165_000);
+  });
+});
+
+describe("edge cases: repayments", () => {
+  it("never charges interest at a zero rate, and splits the loan evenly", () => {
+    const r = repaymentFull(360_000, 0, 30, "monthly", 0);
+    expect(r.amount).toBeCloseTo(1_000, 9);
+    expect(r.payYears).toBeCloseTo(30, 9);
+    expect(r.totalInterest).toBe(0);
+  });
+
+  it("returns zeroes for a zero loan instead of dividing by it", () => {
+    expect(repaymentFull(0, 6, 30, "monthly", 0)).toEqual({ amount: 0, payYears: 0, totalInterest: 0, nPeriods: 0 });
+  });
+
+  it("pays the loan off early with a large extra repayment", () => {
+    const base = repaymentFull(100_000, 6, 30, "monthly", 0);
+    const fast = repaymentFull(100_000, 6, 30, "monthly", 5_000);
+    expect(fast.amount).toBeCloseTo(base.amount + 5_000, 9);
+    expect(fast.payYears).toBeLessThan(2);
+    expect(fast.totalInterest).toBeLessThan(base.totalInterest / 10);
+  });
+
+  it("costs a whisker less per year on weekly than monthly, because interest accrues less between payments", () => {
+    const monthly = repayment(360_000, 6, 30, "monthly");
+    const weekly = repayment(360_000, 6, 30, "weekly");
+    const yearWeekly = weekly * 52;
+    const yearMonthly = monthly * 12;
+    expect(yearWeekly).toBeLessThan(yearMonthly);
+    expect(yearWeekly).toBeGreaterThan(yearMonthly * 0.999);
+  });
+
+  it("scales the repayment down as the term lengthens", () => {
+    const twenty = repayment(360_000, 6, 20, "monthly");
+    const thirty = repayment(360_000, 6, 30, "monthly");
+    expect(thirty).toBeLessThan(twenty);
+  });
+});
+
+describe("edge cases: the projection", () => {
+  const structure = (over: Partial<Parameters<typeof structureFromFinance>[0]> = {}) =>
+    structureFromFinance({
+      homeValue: 800_000, deposit: 16_000, maxLoan: 544_000,
+      homeType: "existing", state: "NSW", region: "major", ...over,
+    });
+
+  it("works on a weekly repayment frequency", () => {
+    const inp = baseInputs({ freq: "weekly" });
+    const pr = project(inp, structure());
+    expect(pr.rows[0].loanBalance).toBe(544_000);
+    expect(pr.rows[1].loanBalance).toBeLessThan(pr.rows[0].loanBalance);
+    expect(pr.rows[1].loanBalance).toBeGreaterThan(0);
+  });
+
+  it("caps the horizon at 60 years and drops a sale past the cap", () => {
+    const pr = project(baseInputs({ sellAfterYear: 70 }), structure());
+    expect(pr.rows).toHaveLength(61);
+    expect(pr.soldAt).toBeNull();
+  });
+
+  it("models a sale after the loan is repaid with nothing to pay the lender", () => {
+    const pr = project(baseInputs({ growthPct: 0, sellAfterYear: 35, termYears: 30 }), structure());
+    expect(pr.soldAt).not.toBeNull();
+    expect(pr.soldAt!.loanPayout).toBe(0);
+    expect(pr.soldAt!.govPayout).toBe(240_000);
+    expect(pr.soldAt!.yourNet).toBeCloseTo(800_000 - pr.soldAt!.costs - 240_000, 6);
+  });
+
+  it("leaves the loan untouched when buy-backs come from savings", () => {
+    const savings = project(
+      baseInputs({ growthPct: 0, buyback: { enabled: true, startYear: 5, percentPerYear: 5, fundByLoan: false } }),
+      structure(),
+    );
+    const none = project(baseInputs({ growthPct: 0 }), structure());
+    expect(savings.rows[10].loanBalance).toBeCloseTo(none.rows[10].loanBalance, 6);
+    expect(savings.buybackSummary.borrowed).toBe(0);
+    expect(savings.buybackSummary.extraRepayment).toBe(0);
+  });
+
+  it("raises a buy-back below the minimum up to 5% of the value", () => {
+    const pr = project(
+      baseInputs({ growthPct: 0, buyback: { enabled: true, startYear: 5, percentPerYear: 1, fundByLoan: false } }),
+      structure(),
+    );
+    expect(pr.events[0]).toContain("$40,000"); // 5% of 800k, rounded to $1,000
+    expect(pr.buybackSummary.totalPaid).toBeGreaterThanOrEqual(40_000);
+  });
+
+  it("ignores an improvement dated in year zero and a forced buy-back in year zero", () => {
+    const pr = project(
+      baseInputs({
+        growthPct: 0,
+        improvement: { year: 0, cost: 50_000, valueUplift: 50_000 },
+        incAboveCapFromYear: 0,
+        buyback: { enabled: false, startYear: 5, percentPerYear: 5, fundByLoan: false },
+      }),
+      structure(),
+    );
+    expect(pr.rows[0].homeValue).toBe(800_000);
+    expect(pr.events).toHaveLength(0);
+  });
+
+  it("keeps the Commonwealth whole at sale: it takes its share of the day's value", () => {
+    const inp = baseInputs({ growthPct: 3, sellAfterYear: 10 });
+    const pr = project(inp, structure());
+    expect(pr.soldAt!.govPayout).toBeCloseTo(pr.rows[10].homeValue * 0.3, 4);
+  });
+
+  it("costs more to buy the share back as the home grows, because it is a share of the day's value", () => {
+    // the CSP is a percentage of the CURRENT value, so buying it out costs more as the home grows
+    const pr = project(
+      baseInputs({
+        growthPct: 5,
+        buyback: { enabled: true, startYear: 5, percentPerYear: 5, fundByLoan: true },
+      }),
+      structure(),
+    );
+    expect(pr.buybackSummary.payments).toBeGreaterThan(0);
+    expect(pr.buybackSummary.totalPaid).toBeGreaterThan(240_000); // more than the original 30% share at today's value
+  });
+
+  it("explains a zero share plainly when the deposit already covers the 20%", () => {
+    const rich = structureFromFinance({
+      homeValue: 800_000, deposit: 200_000, maxLoan: 600_000,
+      homeType: "existing", state: "NSW", region: "major",
+    });
+    const checks = eligibility(baseInputs({ deposit: 200_000, maxLoan: 600_000 }), rich);
+    const csp = checks.find((c) => c.id === "csp")!;
+    expect(csp.ok).toBe("check");
+    expect(csp.detail).toMatch(/deposit alone covers the 20%/);
+    expect(csp.action).toMatch(/Nothing to fix/);
+    expect(csp.fix).toBeUndefined();
+  });
+
+  it("starts and ends with a coherent balance sheet", () => {
+    const pr = project(baseInputs({ growthPct: 3 }), structure());
+    for (const r of pr.rows) {
+      expect(r.buyerFractionDollar + r.cspValue).toBeCloseTo(r.homeValue, 4);
+      expect(r.buyerEquityDollar).toBeCloseTo(r.buyerFractionDollar - r.loanBalance, 4);
+      expect(r.loanBalance).toBeGreaterThanOrEqual(0);
+    }
+    expect(pr.rows[0].buyerEquityDollar).toBe(16_000); // just the deposit on day one
+  });
+});
+
+describe("edge cases: eligibility and cash", () => {
+  const s = structureFromFinance({
+    homeValue: 800_000, deposit: 16_000, maxLoan: 544_000,
+    homeType: "existing", state: "NSW", region: "major",
+  });
+
+  it("says how much more deposit is needed, and offers to model it", () => {
+    const checks = eligibility(baseInputs({ deposit: 0 }), structureFromFinance({
+      homeValue: 800_000, deposit: 0, maxLoan: 544_000, homeType: "existing", state: "NSW", region: "major",
+    }));
+    const deposit = checks.find((c) => c.id === "deposit")!;
+    expect(deposit.ok).toBe("no");
+    expect(deposit.action).toMatch(/Add \$16,000/);
+    expect(deposit.fix).toMatchObject({ kind: "deposit", value: 16_000 });
+  });
+
+  it("treats income exactly on the cap as passing", () => {
+    const checks = eligibility(baseInputs({ combinedIncome: 103_000 }), s);
+    expect(checks.find((c) => c.id === "income")!.ok).toBe("yes");
+  });
+
+  it("asks for a check when the area has no cap listed", () => {
+    const act = structureFromFinance({
+      homeValue: 600_000, deposit: 12_000, maxLoan: 400_000,
+      homeType: "existing", state: "ACT", region: "rest",
+    });
+    const checks = eligibility(baseInputs({ state: "ACT", region: "rest" }), act);
+    expect(checks.find((c) => c.id === "cap")!.ok).toBe("check");
+  });
+
+  it("flags a custom share outside the range without offering a misleading fix", () => {
+    const tiny = structureCustom({
+      homeValue: 800_000, deposit: 16_000, customGovSharePct: 2,
+      homeType: "existing", state: "NSW", region: "major",
+    });
+    const checks = eligibility(baseInputs({ govShareMode: "custom", customGovSharePct: 2 }), tiny);
+    const csp = checks.find((c) => c.id === "csp")!;
+    expect(csp.ok).toBe("check");
+    expect(csp.detail).toMatch(/outside the scheme's 5% to 30% range/);
+  });
+
+  it("adds the duty estimate, or the manual figure, to the cash needed", () => {
+    const inp = baseInputs();
+    expect(upfrontCash(inp, s, 23_390)).toBe(16_000 + 23_390 + 4_750);
+    expect(upfrontCash({ ...inp, dutyManual: 0 }, s, 23_390)).toBe(16_000 + 4_750);
+    expect(upfrontCash({ ...inp, dutyManual: 12_500 }, s, 23_390)).toBe(16_000 + 12_500 + 4_750);
+  });
+
+  it("answers zero capacity for no income or no surplus", () => {
+    const none = borrowingCapacity({ grossIncome: 0, livingMonthly: 2_000, otherMonthlyDebt: 0, hecsPct: 0, ratePct: 6, termYears: 30 });
+    expect(none).toBe(0);
+    const squeezed = borrowingCapacity({ grossIncome: 60_000, livingMonthly: 6_000, otherMonthlyDebt: 500, hecsPct: 5, ratePct: 6, termYears: 30 });
+    expect(squeezed).toBe(0);
+  });
+
+  it("gives more capacity on a longer term, and less with other debts", () => {
+    const base = { grossIncome: 100_000, livingMonthly: 2_500, otherMonthlyDebt: 0, hecsPct: 0, ratePct: 6 };
+    const thirty = borrowingCapacity({ ...base, termYears: 30 });
+    const twenty = borrowingCapacity({ ...base, termYears: 20 });
+    const debts = borrowingCapacity({ ...base, otherMonthlyDebt: 800, termYears: 30 });
+    expect(thirty).toBeGreaterThan(twenty);
+    expect(debts).toBeLessThan(thirty);
   });
 });
 

@@ -1,14 +1,5 @@
 import type { YearRow } from "../lib/engine";
-
-/** Compact money for chart labels: $130.7B, $96.2M, $1.6M, $481k. */
-function moneyShort(v: number): string {
-  const a = Math.abs(v);
-  const trim = (n: number) => Number(n.toFixed(1)).toLocaleString("en-AU");
-  if (a >= 1e9) return `$${trim(v / 1e9)}B`;
-  if (a >= 1e6) return `$${trim(v / 1e6)}M`;
-  if (a >= 1e3) return `$${Math.round(v / 1e3).toLocaleString("en-AU")}k`;
-  return `$${Math.round(v).toLocaleString("en-AU")}`;
-}
+import { moneyShort } from "../lib/format";
 
 type EndLabel = { value: number; cls: string; name: string; y: number; dy: number };
 

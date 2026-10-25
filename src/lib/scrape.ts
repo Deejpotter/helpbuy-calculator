@@ -149,7 +149,8 @@ export function parseListingText(text: string, url: string): ListingGuess {
     value: Number(m[1].replace(/,/g, "")),
     index: m.index ?? 0,
   })).filter((p) => p.value >= 75_000 && p.value <= 20_000_000);
-  const rential = /\/\s?(week|wk|pw|month|annum)\b/i;
+  // "rent-ish" markers: $650/wk, $2,800 per month, $95,000 p.a. - never a sale price
+  const rential = /\/\s?(week|wk|pw|month|annum|mo)\b|\bper\s?(week|wk|month|annum)\b|\bp\.?\s?a\.?\b/i;
   const price =
     priceMatches.filter((p) => !rential.test(buf.slice(p.index, p.index + 30)))[0] ?? null;
 

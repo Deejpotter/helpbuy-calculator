@@ -15,6 +15,7 @@ import {
 import { roughDuty } from "./lib/duty";
 import { SOURCES, type StateCode } from "./lib/constants";
 import { aud } from "./lib/format";
+import { decodeState, encodeState, mergeInputs } from "./lib/share";
 import InputPanel from "./components/InputPanel";
 import ListingImport from "./components/ListingImport";
 import Wizard from "./components/Wizard";
@@ -54,29 +55,7 @@ function saveStoredState(inputs: Inputs): void {
 
 /* ------------------------- shareable state (URL hash) ------------------------ */
 
-function encodeState(inputs: Inputs): string {
-  const json = JSON.stringify(inputs);
-  return btoa(unescape(encodeURIComponent(json))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function decodeState(hash: string): Inputs | null {
-  try {
-    const b64 = hash.replace(/-/g, "+").replace(/_/g, "/");
-    const json = decodeURIComponent(escape(atob(b64)));
-    const partial = JSON.parse(json) as Partial<Inputs>;
-    return mergeInputs(partial);
-  } catch {
-    return null;
-  }
-}
-
-function mergeInputs(p: Partial<Inputs>): Inputs {
-  return {
-    ...DEFAULT_INPUTS,
-    ...p,
-    buyback: { ...DEFAULT_INPUTS.buyback, ...(p.buyback ?? {}) },
-  };
-}
+/* encode / decode / merge live in lib/share.ts so they can be unit tested */
 
 /* --------------------------------- computed --------------------------------- */
 

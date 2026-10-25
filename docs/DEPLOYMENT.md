@@ -36,9 +36,9 @@ the browser calls directly).
 | dist/index.html | 1.0 kB | 0.6 kB |
 | dist/assets/*.css | 19.3 kB | 5.0 kB |
 | dist/assets/vendor-*.js (all dependencies, cached long-term) | 221.7 kB | 69.0 kB |
-| dist/assets/index-*.js (app code) | 81.3 kB | 26.7 kB |
+| dist/assets/index-*.js (app code) | 88.1 kB | 28.9 kB |
 | dist/assets/AreaChecker-*.js (lazy: bundled official cap lookup) | 86.5 kB | 35.2 kB |
-| Up-front JS (vendor + app) | 303.0 kB | 95.7 kB |
+| Up-front JS (vendor + app) | 309.8 kB | 97.9 kB |
 
 Sizes move by a kilobyte or two with each change; the split shape is what matters.
 

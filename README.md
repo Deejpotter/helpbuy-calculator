@@ -17,7 +17,8 @@ Only the lender in the scheme confirms real eligibility.
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 30 unit tests on the calculation engine and the listing parser
+npm test         # 106 unit tests on the engine, the listing parser, duty, formatting and share links
+npm run test:coverage  # the same run with a coverage report (src/lib is ~99% statements)
 npm run build    # type check + production build into dist/
 npm run preview  # serve dist/ locally to check the production bundle
 ```
@@ -112,12 +113,21 @@ decisions are in [docs/RESEARCH.md](docs/RESEARCH.md). A field-by-field walkthro
 [docs/USER-GUIDE.md](docs/USER-GUIDE.md). Deployment and bundle sizes are in
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
+## Tests
+
+`npm test` runs 106 unit tests: no network, no browser, about a second. They pin the scheme
+maths to the official worked examples and cover the edge cases that broke real sessions (the
+bank limit as a ceiling rather than the loan, late-start buy-backs that need a new loan, the
+full exit under 5 percent, zero-rate and zero-loan repayments), the duty scales, the share
+link round trip including junk links, and the listing parser including how it fails. Run
+`npm run test:coverage` for the table; `src/lib` sits at about 99 percent of statements.
+
 ## Accuracy, and what this tool does not do
 
 - Transfer duty is a rough estimate on your share of the price from published scales. State
   concessions differ; check your revenue office calculator or type the exact amount.
 - Borrowing capacity is a heuristic. Your lender's formal assessment always wins.
-- The default rate (5.5 percent) is an editable placeholder, not a quote.
+- The default rate (6.55 percent) is an editable assumption, not a quote.
 - Growth and income paths are your assumptions, not forecasts.
 - The app never stores anything online; it cannot know your CBA login, and it does not model
   the First Home Guarantee, FHSS or state schemes beyond links.
