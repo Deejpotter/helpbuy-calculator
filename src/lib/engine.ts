@@ -26,6 +26,7 @@ export type BuybackPlan = {
   enabled: boolean;
   startYear: number;       // first year after settlement (= year 1..)
   percentPerYear: number;  // of the property's value in that year (>= minimum 5%)
+  everyYears: number;      // years between payments: 1 = every year, 30 = after each new loan is repaid
   fundByLoan: boolean;     // else funded from savings
 };
 
@@ -290,6 +291,7 @@ export type YearRow = {
 
 export type BuybackSummary = {
   payments: number;           // how many buy-backs were modeled
+  years: number[];            // the years those payments landed in
   totalPaid: number;          // dollars paid to the Commonwealth across all modeled payments
   firstYear: number | null;   // year the first payment landed (null = none modeled)
   fullOwnershipYear: number | null; // year the CSP reached zero (null = not within horizon)
@@ -333,7 +335,8 @@ export function project(inp: Inputs, s: Structure): Projection {
       40,
       inp.sellAfterYear,
       imp ? imp.year : 0,
-      inp.buyback.enabled ? inp.buyback.startYear + 20 : 0,
+      // enough room for up to eight chunks (a 40% share at 5% each), within the 60 year cap
+      inp.buyback.enabled ? inp.buyback.startYear + Math.max(1, inp.buyback.everyYears || 1) * 8 : 0,
       inp.incAboveCapFromYear + 2,
     ),
   );
@@ -364,7 +367,7 @@ export function project(inp: Inputs, s: Structure): Projection {
   const newLoans: Array<{ year: number; amount: number }> = [];
   const rows: YearRow[] = [];
   const buybackSummary: BuybackSummary = {
-    payments: 0, totalPaid: 0, firstYear: null, fullOwnershipYear: null, borrowed: 0, extraRepayment: 0,
+    payments: 0, years: [], totalPaid: 0, firstYear: null, fullOwnershipYear: null, borrowed: 0, extraRepayment: 0,
   };
 
   // forced buy-back (minimum payment), if modeled
@@ -385,10 +388,19 @@ export function project(inp: Inputs, s: Structure): Projection {
       );
     }
 
-    if (inp.buyback.enabled && t >= inp.buyback.startYear && t > 0 && cspPct > 0.0001) {
+    if (
+      inp.buyback.enabled &&
+      t >= inp.buyback.startYear &&
+      t > 0 &&
+      cspPct > 0.0001 &&
+      (t - inp.buyback.startYear) % Math.max(1, inp.buyback.everyYears || 1) === 0
+    ) {
       const planned = Math.max(RULES.minBuybackShareOfValue, inp.buyback.percentPerYear / 100) * V;
       let pay = Math.min(cspDollars, Math.round(planned / RULES.buybackRoundTo) * RULES.buybackRoundTo);
-      if (cspPct <= RULES.minBuybackShareOfValue) pay = cspDollars; // below 5% of value: repay the remaining share in full
+      // below 5% of value: repay the remaining share in full
+      if (cspPct <= RULES.minBuybackShareOfValue) pay = cspDollars;
+      // don't leave a dust payment behind: a residue under the $1,000 rounding is cleared with this one
+      if (cspDollars - pay <= RULES.buybackRoundTo) pay = cspDollars;
       if (pay > 0) {
         const oldPct = cspPct;
         cspPct = Math.max(0, cspPct - pay / V);
@@ -403,6 +415,7 @@ export function project(inp: Inputs, s: Structure): Projection {
         );
         buybackSummary.payments++;
         buybackSummary.totalPaid += pay;
+        buybackSummary.years.push(t);
         if (buybackSummary.firstYear === null) buybackSummary.firstYear = t;
       }
     } else if (t === forcedYear && t > 0 && cspPct > 0.0001) {
@@ -682,7 +695,7 @@ export const initialInputs: Inputs = {
   growthPct: 3,
   incomeGrowthPct: 2.5,
   incAboveCapFromYear: 0,
-  buyback: { enabled: false, startYear: 5, percentPerYear: 5, fundByLoan: true },
+  buyback: { enabled: false, startYear: 5, percentPerYear: 5, everyYears: 1, fundByLoan: true },
   improvement: null,
   sellAfterYear: 0,
   agentPct: 2.5,

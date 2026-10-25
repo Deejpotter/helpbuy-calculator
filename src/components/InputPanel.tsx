@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import type { Inputs } from "../lib/engine";
 import { borrowingCapacity } from "../lib/engine";
 import { RBA_NOTE, SX, type StateCode } from "../lib/constants";
-import { aud, num } from "../lib/format";
+import { aud, num, pct } from "../lib/format";
 import { MoneyInput, PctInput, Row, NumberInput, Seg, SelectRaw, SliderRow } from "./ui";
 
 const AreaChecker = lazy(() => import("./AreaChecker"));
@@ -15,6 +15,11 @@ export default function InputPanel(props: {
   plannedShare: number;
 }) {
   const { inputs: I, set } = props;
+  // the whole-share preset: enough percent to buy every remaining chunk in one payment
+  const wholeSharePct = Math.max(
+    5,
+    Math.ceil((props.plannedShare / Math.max(1, I.homeValue)) * 1000) / 10,
+  );
 
   return (
     <div className="panel">
@@ -237,7 +242,7 @@ export default function InputPanel(props: {
             <Row label="First buy-back in year">
               <NumberInput value={I.buyback.startYear} onChange={(v) => set("buyback", { ...I.buyback, startYear: Math.max(1, v) })} min={1} />
             </Row>
-            <Row label="Buy back per year" note="≥ 5% of value is the scheme minimum">
+            <Row label="Buy back each time" note="a share of the home's value then; 5% is the scheme minimum">
               <PctInput
                 value={I.buyback.percentPerYear}
                 onChange={(v) => set("buyback", { ...I.buyback, percentPerYear: v })}
@@ -246,6 +251,37 @@ export default function InputPanel(props: {
                 step={0.5}
               />
             </Row>
+            <Row label="One buy-back every" note="years - not every year unless you want that">
+              <NumberInput
+                value={I.buyback.everyYears}
+                onChange={(v) => set("buyback", { ...I.buyback, everyYears: Math.max(1, v) })}
+                min={1}
+              />
+            </Row>
+            <p className="hist">
+              {I.buyback.everyYears === 1
+                ? "One payment a year: the share clears in a handful of years."
+                : `One payment every ${I.buyback.everyYears} years, so no new debt stacks up in between.`}
+            </p>
+            {props.plannedShare > 0 ? (
+              <p className="hist">
+                Or start from one of these:{" "}
+                <button
+                  className="mini-cta"
+                  onClick={() => set("buyback", { ...I.buyback, percentPerYear: wholeSharePct, everyYears: 1 })}
+                >
+                  all at once - {pct(wholeSharePct / 100)} of the value
+                </button>{" "}
+                or{" "}
+                <button
+                  className="mini-cta"
+                  onClick={() => set("buyback", { ...I.buyback, percentPerYear: 5, everyYears: I.termYears })}
+                >
+                  one minimum chunk after each loan ({I.termYears} years)
+                </button>
+                . Both stay editable.
+              </p>
+            ) : null}
             <Row label="Funded by" note="each buy-back is its own new loan, at your rate and term">
               <Seg
                 name="bbf"

@@ -71,13 +71,17 @@ the example back at any time.
 
 ## 04 Plans: buy-backs and improvements
 
-- **Buy-back plan.** Turn it on, pick the first year and the percent of value to buy back each
-  year (5 percent is the scheme minimum). Funding defaults to **a new loan**: every buy-back is
-  modelled as its own loan at your rate and term, principal and interest, so the balance falls
-  again after each payment and a buy-back made after the first loan is repaid still shows up as
-  debt. Switch it to savings if you plan to pay cash. The results show the journey to full
-  ownership, how much the new loans total and the repayment they add; borrowing can bring LMI
-  back if the loan goes over 80 percent of value, and the app tells you so.
+- **Buy-back plan.** Turn it on, pick the first year, how big each payment is (5 percent of the value
+  at the time is the scheme minimum), and how often: every year, or one payment every N years (set N
+  to your loan term to buy one chunk only after each loan is repaid). Two one-click starts sit under
+  the fields: **all at once** buys the whole remaining share in a single payment, and **one minimum
+  chunk after each loan** spaces 5 percent payments by the loan term. Funding defaults to **a new
+  loan**: every buy-back is modelled as its own loan at your rate and term, principal and interest,
+  so the balance falls again after each payment and a buy-back made after the first loan is repaid
+  still shows up as debt. Switch it to savings if you plan to pay cash. The results show the journey
+  to full ownership, the years the payments land in, the size of each payment, the total across all
+  of them (not one bill), and the repayment the new loans add; borrowing can bring LMI back if the
+  loan goes over 80 percent of value, and the app tells you so.
 - **Improvement (optional).** If you model one, remember the real rules: costs add up over a
   rolling 12 month window toward the $21,000 notification threshold; you must notify before
   starting; the share adjustment only happens if you notified; and you pay for the works

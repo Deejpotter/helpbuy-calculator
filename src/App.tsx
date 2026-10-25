@@ -221,6 +221,7 @@ function Planner() {
       ...inputs.buyback,
       enabled: true,
       startYear: Math.max(1, inputs.buyback.startYear) || 3,
+      everyYears: Math.max(1, inputs.buyback.everyYears) || 1,
       percentPerYear: inputs.buyback.percentPerYear || 5,
     });
     setToast("Buy-back plan added. See Path to full ownership (section 04).");

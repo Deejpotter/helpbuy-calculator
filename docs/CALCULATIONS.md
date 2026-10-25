@@ -70,7 +70,11 @@ Each check in results section 02 maps to a rule:
   Guide, a payment must reduce the share by at least 5 percentage points of the value at that
   time (rounded to $1,000) unless it is the final full buy-out; the plan's percent is clamped
   to that minimum, and once the remaining share sits at or under 5 percent, the full remaining
-  amount is repaid. Savings-funded payments leave the loan alone. A loan-funded payment is
+  amount is repaid. A residue under the $1,000 rounding is cleared with the same payment rather
+  than left as a dust payment next year. The schedule is `startYear` plus every `everyYears`
+  (1 = yearly; setting it to the loan term gives one chunk per loan). Paying a percent at least
+  equal to the remaining share buys the whole thing in one payment. Savings-funded payments leave
+  the loan alone. A loan-funded payment is
   modelled as a **new loan of its own** - same rate and term, principal and interest, amortising
   from its own year - so a payment made after the first loan is repaid still appears as debt and
   the balance falls again rather than sitting flat. The extra repayment shown is the sum of the

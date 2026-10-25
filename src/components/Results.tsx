@@ -267,20 +267,54 @@ export function Results(props: {
             <table className="flat">
               <tbody>
                 <tr className="row-you"><th>First buy-back modeled</th><td className="num">yr {bs.firstYear}</td></tr>
-                <tr><th>Payments modeled</th><td className="num">{bs.payments}</td></tr>
-                <tr><th>Total paid to the Commonwealth</th><td className="num strong c-green">{aud(bs.totalPaid)}</td></tr>
+                <tr>
+                  <th>Payments modeled</th>
+                  <td className="num">
+                    {bs.payments}
+                    {bs.years.length === 0
+                      ? ""
+                      : bs.years.length <= 6
+                        ? ` - in ${bs.years.length === 1 ? "year" : "years"} ${bs.years.join(", ")}`
+                        : ` - from year ${bs.years[0]}, every ${I.buyback.everyYears} years`}
+                  </td>
+                </tr>
+                {bs.payments > 1 ? (
+                  <tr>
+                    <th>Each payment</th>
+                    <td className="num">
+                      about {aud(bs.totalPaid / Math.max(1, bs.payments))}
+                      <span className="muted"> ({pct(I.buyback.percentPerYear / 100, 1)} of the value at the time)</span>
+                    </td>
+                  </tr>
+                ) : null}
+                <tr>
+                  <th>Total across all payments</th>
+                  <td className="num strong c-green">
+                    {aud(bs.totalPaid)}
+                    {bs.payments > 1 ? (
+                      <span className="muted"> - spread over {bs.payments} payments, not one bill</span>
+                    ) : (
+                      <span className="muted"> - paid in one go</span>
+                    )}
+                  </td>
+                </tr>
                 <tr>
                   <th>Funding</th>
                   <td className="num muted">
                     {I.buyback.fundByLoan
-                      ? `a new loan each time - ${aud(bs.borrowed)} borrowed across ${bs.payments === 1 ? "1 loan" : `${bs.payments} loans`}`
+                      ? bs.payments === 1
+                        ? `one new loan of ${aud(bs.borrowed)}`
+                        : `a new loan each time - ${aud(bs.borrowed)} borrowed across ${bs.payments} loans`
                       : "from savings"}
                   </td>
                 </tr>
                 {I.buyback.fundByLoan && bs.borrowed > 0 ? (
                   <tr>
                     <th>The new loans add</th>
-                    <td className="num">{aud(bs.extraRepayment)} per {FREQ_UNIT[I.freq]}</td>
+                    <td className="num">
+                      {aud(bs.extraRepayment)} per {FREQ_UNIT[I.freq]}
+                      <span className="muted"> - not the payment amount, that is borrowed</span>
+                    </td>
                   </tr>
                 ) : null}
               </tbody>
@@ -297,9 +331,11 @@ export function Results(props: {
               </p>
             ) : null}
             <p className="muted">
-              Every payment is at least 5% of the value <em>at that time</em>, rounded to $1,000, and based on a fresh
-              valuation you pay for. It's never valued from what the government first contributed. Adjust the schedule
-              in Plans: buy-backs &amp; improvements.
+              Every payment is at least 5% of the value <em>at that time</em>, rounded to $1,000 (a leftover under
+              $1,000 is cleared with the last payment), and based on a fresh valuation you pay for. It's never valued
+              from what the government first contributed. You set the rhythm in Plans: buy-backs &amp; improvements -
+              every year, one payment every few years, one chunk after each loan is repaid, or the whole share in one
+              payment.
             </p>
           </>
         ) : (

@@ -17,7 +17,7 @@ Only the lender in the scheme confirms real eligibility.
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 106 unit tests on the engine, the listing parser, duty, formatting and share links
+npm test         # 112 unit tests on the engine, the listing parser, duty, formatting and share links
 npm run test:coverage  # the same run with a coverage report (src/lib is ~99% statements)
 npm run build    # type check + production build into dist/
 npm run preview  # serve dist/ locally to check the production bundle
@@ -70,9 +70,11 @@ anything in.
      government share in dollars (up to a 60 year horizon), plus a milestones table and any
      modelled events.
    - 04 Path to full ownership: with a plan on, an equity journey bar (today to 100 percent),
-     a summary of the modelled payments, the total borrowed and the repayment the new loans add;
-     buy-backs are funded by a new loan by default (switch it to savings if you prefer), and
-     without a plan there's a one-click "model a buy-back plan".
+     the years the payments land in, the size of each one, the total across all of them, the
+     amount borrowed and the repayment the new loans add. Buy-backs are funded by a new loan by
+     default (switch it to savings if you prefer), and the plan can pay yearly, every N years, one
+     chunk per loan, or the whole share at once. Without a plan there's a one-click "model a
+     buy-back plan".
    - 05 Selling: slide the sale year and see the payout waterfall (agent, loan payout,
      government share, then you) and a horizons table.
    - 06 Cash at settlement: deposit plus duty estimate plus other costs, and monthly ongoing
@@ -115,7 +117,7 @@ decisions are in [docs/RESEARCH.md](docs/RESEARCH.md). A field-by-field walkthro
 
 ## Tests
 
-`npm test` runs 106 unit tests: no network, no browser, about a second. They pin the scheme
+`npm test` runs 112 unit tests: no network, no browser, about a second. They pin the scheme
 maths to the official worked examples and cover the edge cases that broke real sessions (the
 bank limit as a ceiling rather than the loan, late-start buy-backs that need a new loan, the
 full exit under 5 percent, zero-rate and zero-loan repayments), the duty scales, the share
