@@ -27,7 +27,13 @@ export function useAnimatedNumber(target: number, duration = 380): number {
       if (p < 1) rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
+    // frames stop in a hidden tab, so snap to the real number rather than show a stale one
+    const settle = window.setTimeout(() => {
+      fromRef.current = target;
+      setDisplay(target);
+    }, duration + 250);
     return () => {
+      window.clearTimeout(settle);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
   }, [target, duration, reduce]);

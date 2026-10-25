@@ -73,11 +73,19 @@ export type Inputs = {
   livingMonthly: number;
 };
 
+export type CheckFix =
+  | { kind: "share"; value: number; label: string }
+  | { kind: "deposit"; value: number; label: string }
+  | { kind: "price"; value: number; label: string }
+  | { kind: "loan"; value: number; label: string };
+
 export type Check = {
   id: string;
   label: string;
   ok: "yes" | "no" | "check";
-  detail: string;
+  detail: string;      // where you stand, in plain words
+  action?: string;     // what to do about it, only when it doesn't pass
+  fix?: CheckFix;      // one click that sets the number for you
 };
 
 export type Structure = {
@@ -520,6 +528,10 @@ export function borrowingCapacity(p: {
 
 /* ------------------------------ eligibility ------------------------------ */
 
+/** "$450,000" for the check copy. */
+const m = (n: number) => `$${Math.round(n).toLocaleString("en-AU")}`;
+const pct1 = (n: number) => `${(n * 100).toFixed(1)}%`;
+
 export function eligibility(inp: Inputs, s: Structure): Check[] {
   const cap = incomeCapFor(inp.applicantType);
   const overCap = inp.combinedIncome > cap;
@@ -527,59 +539,115 @@ export function eligibility(inp: Inputs, s: Structure): Check[] {
     inp.applicantType === "single" ? "single" : inp.applicantType === "singleParent" ? "single parent" : "joint";
   const checks: Check[] = [];
 
+  const V = s.homeValue;
+  const vb = s.valueBase;
+  const maxCsp = maxCspShare(inp.homeType);
+  const areaLabel = inp.region === "major" ? "a capital city or regional centre" : "the rest of the state";
+
+  const minDeposit = RULES.minDepositShare * V;
+  const targetLoan = RULES.maxLvr * vb;                       // the loan size that keeps LMI away
+  // the share (as a % of the price) that brings the loan down to 80% of the value
+  const shareToFixLoan = Math.max(0, Math.min(maxCsp * V, vb - s.deposit - targetLoan));
+  const sharePctToFixLoan = V > 0 ? (shareToFixLoan / V) * 100 : 0;
+  // round the suggested share UP so the loan really does land at or under 80%
+  const shareFixPct = Math.min(maxCsp * 100, Math.ceil(sharePctToFixLoan * 10) / 10);
+  const shareFixDollars = (shareFixPct / 100) * V;
+  const depositToFixLoan = Math.max(0, vb * (1 - RULES.maxLvr) - s.govShare);
+  const bankCoversAll = s.govShare <= 0;
+  const shareFixFits =
+    shareToFixLoan > 0 &&
+    sharePctToFixLoan >= CSP.min * 100 - 1e-9 &&
+    sharePctToFixLoan <= maxCsp * 100 + 1e-9;
+
   checks.push({
     id: "income",
-    label: `Income cap - ${typeLabel} · FY 2026-27`,
+    label: `Income cap - ${typeLabel}, ${m(cap)} a year`,
     ok: overCap ? "no" : "yes",
     detail: overCap
-      ? `That's $${Math.round(inp.combinedIncome - cap).toLocaleString()} over the $${cap.toLocaleString()} cap. The test reads last financial year's tax Notice of Assessment and it's strict: no exemptions, even for one-off bonuses or redundancy payouts.`
-      : `Under the $${cap.toLocaleString()} cap, judged on last financial year's tax Notice of Assessment. The cap rises with wages every 1 July (next: Jul 2027). Once you own the home, reviews at least every 5 years look at two tax years in a row.`,
+      ? `Your ${m(inp.combinedIncome)} is ${m(inp.combinedIncome - cap)} over the ${m(cap)} cap. The test looks only at the taxable income on your last tax notice of assessment: bonuses, overtime and redundancy payouts all count, and there are no exemptions.`
+      : `Your ${m(inp.combinedIncome)} is ${m(cap - inp.combinedIncome)} under the ${m(cap)} cap. The scheme reads the taxable income on your last tax notice of assessment, not your salary.`,
+    action: overCap
+      ? `Two things can change this. A joint application is measured against a combined ${m(165_000)} cap instead, and the cap rises with wages every 1 July. At this income, the scheme isn't available unless one of those applies.`
+      : undefined,
   });
 
   checks.push({
     id: "deposit",
-    label: "Minimum 2% deposit",
+    label: `At least 2% deposit (${m(minDeposit)} on this home)`,
     ok: s.scans.depositOk ? "yes" : "no",
     detail: s.scans.depositOk
-      ? `$${Math.round(s.deposit).toLocaleString()} is ${(s.deposit / Math.max(1, s.homeValue) * 100).toFixed(1)}% of the price. Duty and other setup costs can't come out of this deposit; state concessions can help with those.`
-      : `A $${Math.round(s.homeValue).toLocaleString()} home needs at least $${Math.round(RULES.minDepositShare * s.homeValue).toLocaleString()} down. You're also expected to put in as much as you reasonably can.`,
+      ? `${m(s.deposit)} is ${pct1(s.deposit / Math.max(1, V))} of the price, above the 2% minimum. This money has to be your own cash: stamp duty and setup costs can't come out of it.`
+      : `The minimum is 2% of the price, which is ${m(minDeposit)} here. You've entered ${m(s.deposit)}, so the deposit is ${m(minDeposit - s.deposit)} short.`,
+    action: s.scans.depositOk
+      ? undefined
+      : `Add ${m(minDeposit - s.deposit)} to reach ${m(minDeposit)}. Your lender will also ask where the money came from, so keep the paper trail.`,
+    fix: s.scans.depositOk ? undefined : { kind: "deposit", value: minDeposit, label: `Model a ${m(minDeposit)} deposit` },
   });
 
+  // LMI gets the longest explanation in the app: it's the cost absolute beginners have never heard of.
   checks.push({
     id: "lvr",
-    label: "Loan 80% of price or less · no LMI",
+    label: "Loan at 80% of the value or less - no LMI",
     ok: s.scans.lvrOk ? "yes" : "no",
     detail: s.scans.lvrOk
-      ? `The loan is ${(s.lvr * 100).toFixed(1)}% of the price, so there's no Lender's Mortgage Insurance. The official guide calls this a potential saving of thousands.`
-      : `Even with the biggest government share, the loan would top 80% of the price. Look at a cheaper home, a bigger deposit, or a smaller loan.`,
+      ? `Your loan is ${pct1(s.lvr)} of the home's value. Banks only charge LMI (Lender's Mortgage Insurance - a one-off fee that protects the bank if you can't pay, not you) once the loan is above 80%. At ${m(s.buyerLoan)} you're clear of it.`
+      : `Your loan would be ${m(s.buyerLoan)}, which is ${pct1(s.lvr)} of the ${m(vb)} value. Above 80% (${m(targetLoan)} here) banks usually add LMI (Lender's Mortgage Insurance): a one-off fee that protects the bank if you can't pay, not you. It can run to thousands, and some lenders add it to the loan.`,
+    action: s.scans.lvrOk
+      ? undefined
+      : `Three ways to get the loan to ${m(targetLoan)} or less: ask for a ${shareFixPct.toFixed(1)}% government share (${m(shareFixDollars)}), put in ${m(Math.max(0, depositToFixLoan - s.deposit))} more deposit (total ${m(depositToFixLoan)}), or buy a cheaper home.`,
+    fix: s.scans.lvrOk
+      ? undefined
+      : shareFixFits
+        ? { kind: "share", value: shareFixPct, label: `Model a ${shareFixPct.toFixed(1)}% share` }
+        : { kind: "deposit", value: depositToFixLoan, label: `Model a ${m(depositToFixLoan)} deposit` },
   });
 
   checks.push({
     id: "csp",
-    label: "Government share between 5-30% (existing) or 5-40% (new)",
+    label: `Government share between 5% and ${maxCsp * 100}%`,
     ok: s.scans.cspInRange ? "yes" : "check",
-    detail: s.govShare > 0
-      ? `The government would take ${(s.govSharePct * 100).toFixed(1)}% of the price. It charges no interest and no rent; at sale or buy-back it simply receives that share of whatever the home is worth that day.`
-      : "Your deposit and loan already cover the whole price, so there's nothing for the government to bridge. Talk to your lender; the 5% Deposit Scheme might suit you better.",
+    detail: bankCoversAll
+      ? `Your loan and deposit already cover the whole price, so the government would own nothing. The scheme only fills the gap between your deposit, your loan and the price - it can't hand you cash.`
+      : s.govSharePct > maxCsp + 1e-9 || s.govSharePct < CSP.min - 1e-9
+        ? `The share comes out at ${pct1(s.govSharePct)}, outside the scheme's 5% to ${maxCsp * 100}% range.`
+        : `The government would own ${pct1(s.govSharePct)} of the home (${m(s.govShare)}). It charges no interest and no rent. When you sell, or buy the share back, it takes that share of the value on the day - so it rises and falls with the market.`,
+    action: bankCoversAll
+      ? `You don't have to borrow the bank's maximum. ${shareFixFits ? `A ${shareFixPct.toFixed(1)}% share brings the loan down to ${m(targetLoan)} and skips LMI, which is usually the whole reason to use the scheme.` : "Add to the deposit or lower the loan if you want the scheme to do something."}`
+      : s.scans.cspInRange
+        ? undefined
+        : `Set the share back inside 5% to ${maxCsp * 100}%, or switch to Bridge the gap and let the app work it out.`,
+    fix: !s.scans.cspInRange && bankCoversAll && shareFixFits
+      ? { kind: "share", value: shareFixPct, label: `Model a ${shareFixPct.toFixed(1)}% share` }
+      : undefined,
   });
 
   checks.push({
     id: "cap",
-    label: "Price cap for the location",
+    label: "Price cap for this area",
     ok: s.scans.cap === null ? "check" : s.scans.capOk ? "yes" : "no",
     detail:
       s.scans.cap === null
-        ? "No cap listed for that choice. Check your exact suburb and postcode with the official postcode tool."
+        ? "No price cap is listed for that state and area combination. Check the exact suburb and postcode with the official tool before you rely on it."
         : s.scans.capOk
-          ? `The cap here is $${s.scans.cap.toLocaleString()}, so this price clears it with $${Math.round(s.scans.cap - s.homeValue).toLocaleString()} to spare.`
-          : `This is $${Math.round(s.homeValue - s.scans.cap).toLocaleString()} over the $${s.scans.cap.toLocaleString()} cap for the area. Caps don't rise with prices; double-check your suburb with the official postcode tool.`,
+          ? `The cap for ${areaLabel} in ${inp.state} is ${m(s.scans.cap)}, so this price clears it with ${m(s.scans.cap - V)} to spare. The cap is set by the scheme and doesn't rise with house prices.`
+          : `This home is ${m(V - s.scans.cap)} over the ${m(s.scans.cap)} cap for ${areaLabel} in ${inp.state}. Caps are fixed, so it won't become eligible later.`,
+    action:
+      s.scans.cap === null
+        ? "Set the state and area again, or use the area checker by postcode further up the page."
+        : s.scans.capOk
+          ? undefined
+          : `Homes up to ${m(s.scans.cap)} work in this area. If the suburb sits on the boundary, the postcode checker shows which side of the line it falls on.`,
+    fix:
+      s.scans.cap !== null && !s.scans.capOk
+        ? { kind: "price", value: s.scans.cap, label: `Model a ${m(s.scans.cap)} home` }
+        : undefined,
   });
 
   checks.push({
     id: "loan",
-    label: "Home loan from a Participating Lender, principal and interest, up to 30 years",
+    label: "A participating lender, principal and interest, 30 years or less",
     ok: "yes",
-    detail: `Shown here as ${inp.termYears} years at ${inp.ratePct}% against the current lender panel (CommBank, Bank Australia, Teachers Mutual group, Queensland Country Bank). Your lender sets the real rate and term.`,
+    detail: `Only lenders on the scheme's panel can make these loans: CommBank, Bank Australia, Teachers Mutual group and Queensland Country Bank. They set the real rate and test your income and spending; this planner assumes ${inp.ratePct}% over ${inp.termYears} years.`,
   });
 
   return checks;

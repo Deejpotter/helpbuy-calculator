@@ -8,6 +8,7 @@ import {
   structureCustom,
   structureFromFinance,
   upfrontCash,
+  type CheckFix,
   type Freq,
   type Inputs,
 } from "./lib/engine";
@@ -247,8 +248,17 @@ function Planner() {
     setTimeout(() => setToast(""), 3200);
   }
 
-  function startOver() {
-    try { localStorage.removeItem(STATE_KEY); } catch { /* ignore */ }
+  /** One-click remedies from the rules check: set whichever input the fix names. */
+  function applyFix(fix: CheckFix) {
+    if (fix.kind === "share") patchInputs({ govShareMode: "custom", customGovSharePct: fix.value });
+    else if (fix.kind === "deposit") patchInputs({ deposit: fix.value });
+    else if (fix.kind === "price") patchInputs({ homeValue: fix.value });
+    else patchInputs({ maxLoan: fix.value });
+    setToast("Changed. The checks update straight away.");
+    setTimeout(() => setToast(""), 3000);
+  }
+
+  function startOver() {    try { localStorage.removeItem(STATE_KEY); } catch { /* ignore */ }
     setInputs({ ...DEFAULT_INPUTS });
     setToast("Back to the example. Your A / B / C compare slots are still saved.");
     setTimeout(() => setToast(""), 3000);
@@ -308,6 +318,7 @@ function Planner() {
             setSellYear={(y) => set("sellAfterYear", y)}
             setFreq={(f) => set("freq", f)}
             onEnableBuyback={enableBuyback}
+            onFix={applyFix}
           />
           <Compare
             slots={slots}
@@ -329,11 +340,16 @@ function Planner() {
               <li><strong>The government share charges nothing as it goes.</strong> No interest, no rent. But its dollar
                 value follows the market: at sale or buy-back the government takes its share of whatever the home is
                 worth that day, up or down.</li>
-              <li><strong>Why so little deposit:</strong> a 2% deposit plus the government share keeps the loan at 80% of
-                the price or less, so you skip Lender's Mortgage Insurance. Still put in as much as you reasonably can;
-                the lender's own capacity check shapes the real numbers.</li>
-              <li><strong>Thresholds move:</strong> income caps index on 1 July; improvement/build-variation thresholds are $21,000 (FY 2026-27). Price caps are policy-fixed, not indexed.</li>
-              <li>House prices shown are list prices; a lender valuation may differ. Growth is an assumption, not a forecast.</li>
+              <li><strong>Why the deposit can be small, and what LMI is:</strong> a 2% deposit plus the government
+                share keeps the loan at 80% of the value or less. That matters because above 80% banks charge LMI,
+                a one-off insurance fee that protects the bank rather than you and can cost thousands. The checks
+                above spell it out and give the exact fix when it applies. Still put in as much as you reasonably
+                can - the lender's own income and spending check decides the real numbers.</li>
+              <li><strong>Some limits move, some don't:</strong> the income caps rise with wages every 1 July, and the
+                $21,000 works threshold is set for FY 2026-27. The area price caps are fixed by the scheme, so a home
+                that's over the cap now stays over it.</li>
+              <li><strong>Prices here are asking prices.</strong> A lender's valuation can come in lower, which changes the
+                share and the loan. Growth rates are your own assumption, not a forecast.</li>
             </ul>
             <p className="fine">
               Data sourced from firsthomebuyers.gov.au and CommBank's scheme pages, fetched 23 Oct 2026 (income caps FY

@@ -82,7 +82,7 @@ export default function InputPanel(props: {
         <Row label="Purchase price">
           <MoneyInput id="value" value={I.homeValue} onChange={(v) => set("homeValue", v)} step={10_000} wide />
         </Row>
-        <Row label="Initial valuation (optional)" note="if the valuer values it below the price, the share % rises off that figure">
+        <Row label="Initial valuation (optional)" note="only if a valuer says the home is worth less than the price">
           <Seg
             name="val"
             label="Initial valuation"
@@ -95,16 +95,23 @@ export default function InputPanel(props: {
           />
         </Row>
         {I.valuation0 !== null ? (
-          <Row label="Valued at" note="clause 6.3: the share is measured on min(price, valuation)">
+          <Row label="Valued at" note="the share is measured on the lower of price and valuation">
             <MoneyInput value={I.valuation0} onChange={(v) => set("valuation0", v)} step={5000} wide />
           </Row>
         ) : null}
         <Row label="Your deposit" note="keep about $5-6k more aside for duty and setup costs">
           <MoneyInput id="deposit" value={I.deposit} onChange={(v) => set("deposit", v)} step={1000} wide />
         </Row>
-        <Row label="Most the bank will lend you" note="unsure? Use plan 06 below as a rough check">
+        <Row label="Most the bank will lend you" note="it's a ceiling, not a target - you can borrow less">
           <MoneyInput id="loan" value={I.maxLoan} onChange={(v) => set("maxLoan", v)} step={5000} wide />
         </Row>
+        {I.maxLoan >= I.homeValue - I.deposit ? (
+          <p className="hist warn-line">
+            That's more than this home needs ({aud(Math.max(0, I.homeValue - I.deposit))} covers it on its own), so
+            there'd be nothing for the government to bridge. You don't have to borrow it all: ask for a share and the
+            loan gets smaller - which is what keeps LMI away. Section 02 shows the exact share.
+          </p>
+        ) : null}
         <p className="hist">
           <button
             className="mini-cta"
@@ -126,7 +133,7 @@ export default function InputPanel(props: {
           </button>{" "}
           - a rough figure at the stressed rate; the lender's assessment wins.
         </p>
-        <Row label="Government contribution" note="covers what's left, up to 30% existing or 40% new">
+        <Row label="Government share" note="what the government buys; your loan covers the rest, up to 30% existing or 40% new">
           <Seg
             name="gov-mode"
             label="Contribution mode"
@@ -150,7 +157,8 @@ export default function InputPanel(props: {
           />
         ) : (
           <p className="hist">
-            Covers price − deposit − loan. Official max price at your capacity: <strong>{aud(props.maxAffordable)}</strong>.
+            The government buys whatever your deposit and loan don't cover. The most expensive home that works at
+            these numbers is <strong>{aud(props.maxAffordable)}</strong>.
           </p>
         )}
       </details>

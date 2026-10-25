@@ -107,10 +107,14 @@ the example back at any time.
   purchase price.
 - **01 Repayment detail.** All three frequencies, the stressed repayment (rate plus the
   regulator's 3 percent buffer), loan-free year and lifetime interest.
-- **02 Checked against the rules.** Seven checks: income cap, 2 percent deposit, loan at 80
+- **02 Will it work? The scheme rules.** Six checks: income cap, 2 percent deposit, loan at 80
   percent or less (no LMI at purchase), government share between 5 and 30 / 40 percent, price
-  cap, the gap test (if deposit plus borrowing already buys the home, lenders may rule the
-  scheme out), and the loan requirements. Each row shows a chip: Meets, Fix or Review.
+  cap, and the lender requirements. A box at the top lists only what needs sorting, with the
+  numbers and a one-click fix where one exists ("Model a 16.5% share", "Model a $950,000 home").
+  Each row then explains the position in plain words, says what to change, and carries an OK,
+  Fix or Check chip. LMI is defined wherever it comes up, and a Plain words list at the bottom
+  covers LMI, LVR, deposit, the share, buy-back, equity, stamp duty, valuation, principal and
+  interest, and the stressed rate.
 - **03 Your share over time.** A 40 year chart: green for your stake, dotted clay for the loan
   balance, amber for the government share in dollars. Details hold a milestones table and the
   modelled buy-back list.

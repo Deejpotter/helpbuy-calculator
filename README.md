@@ -59,9 +59,10 @@ anything in.
      cash, your loan, the government).
    - 01 Repayment detail: each frequency, the stressed repayment at rate plus 3 percent (the
      bank buffer), payoff years and total interest.
-   - 02 Checked against the rules: income cap, 2 percent deposit, loan at 80 percent or less,
-     government share range, price cap, the gap test, and the loan rules. Each row is a pass,
-     fix or review chip with the official reasoning.
+   - 02 Will it work? The scheme rules: income cap, 2 percent deposit, loan at 80 percent or
+     less (no LMI), government share range, price cap and the lender rules. A "things to sort"
+     box lists what to change with one-click fixes, every row explains itself in plain words,
+     and a Plain words list defines LMI, LVR, equity and the rest.
    - 03 Your share over time: a year by year chart of your equity, loan balance and the
      government share in dollars (up to a 60 year horizon), plus a milestones table and any
      modelled events.

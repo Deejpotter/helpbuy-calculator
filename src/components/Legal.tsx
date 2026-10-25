@@ -95,7 +95,7 @@ export function TermsPage(): ReactElement {
           Calculations involve modelling assumptions you choose (interest rate, growth, income
           growth). Those are not forecasts. Transfer duty figures are rough estimates on your
           share of the price; concessions vary by state. Borrowing capacity is a heuristic; your
-          lender's serviceability assessment (including the APRA buffer) governs.
+          lender's own income and spending check (including APRA's 3 point rate buffer) governs.
         </p>
       </Sec>
 

@@ -67,7 +67,7 @@ export default function Compare(props: {
                       <tbody>
                         <tr><td>Price</td><td className="num">{aud(d.summary.price)}</td></tr>
                         <tr><td>Gov share</td><td className="num">{pct(d.summary.govPct)} · {aud(d.summary.govShare)}</td></tr>
-                        <tr><td>Your loan</td><td className="num">{aud(d.summary.buyerLoan)} (LVR {pct(d.summary.lvr)})</td></tr>
+                        <tr><td>Your loan</td><td className="num">{aud(d.summary.buyerLoan)} ({pct(d.summary.lvr)} of the value)</td></tr>
                         <tr><td>Repayment</td><td className="num">{d.summary.repay}</td></tr>
                         <tr><td>Interest overall</td><td className="num">{aud(d.summary.totalInterest)}</td></tr>
                         <tr><td>Cash needed</td><td className="num">{aud(d.summary.deposit)}</td></tr>

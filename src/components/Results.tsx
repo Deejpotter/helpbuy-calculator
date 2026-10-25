@@ -1,7 +1,7 @@
 ﻿import { aud, num, pct, roundTo } from "../lib/format";
 import { DUTY_ESTIMATE_NOTE } from "../lib/duty";
 import { RULES, SRO_LINKS, SOURCES, type StateCode } from "../lib/constants";
-import type { Check, Inputs, Projection, Structure } from "../lib/engine";
+import type { Check, CheckFix, Inputs, Projection, Structure } from "../lib/engine";
 import { Section, useAnimatedNumber } from "./ui";
 import { EquityChart, Waterfall, type WfKind } from "./Charts";
 
@@ -14,8 +14,22 @@ export type LoanSnapshot = {
 };
 
 const CHIP = { yes: "pass", no: "fix", check: "review" } as const;
-const CHIP_LABEL = { yes: "Meets", no: "Fix", check: "Review" } as const;
+const CHIP_LABEL = { yes: "OK", no: "Fix", check: "Check" } as const;
 const FREQ_UNIT = { weekly: "week", fortnightly: "fortnight", monthly: "month" } as const;
+
+/** Plain-word definitions, for readers who have never done this before. */
+const PLAIN_WORDS: Array<[string, string]> = [
+  ["LMI (Lender's Mortgage Insurance)", "A one-off fee a bank charges when your loan is more than 80% of the home's value. It protects the bank if you can't repay, not you, and it can run to thousands."],
+  ["LVR (loan-to-value ratio)", "Your loan as a percentage of the home's value. At 80% or less, no LMI."],
+  ["Deposit", "Your own cash towards the price. The scheme needs at least 2%, and it can't include stamp duty or setup costs."],
+  ["Government share", "The slice of the home the government buys. No interest and no rent; it takes that share of the value when you sell or buy it back."],
+  ["Buy-back", "Buying a piece of the government's share back. Each payment must be at least 5% of the value at the time."],
+  ["Equity", "The part of the home that's yours: the value, minus your loan, minus the government's share."],
+  ["Stamp duty (transfer duty)", "A state tax on buying a property, paid at settlement. It comes out of your savings, not the deposit."],
+  ["Valuation", "A licensed valuer's opinion of what the home is worth, arranged by your lender. The government's share is measured against it."],
+  ["Principal and interest", "Each repayment covers the interest plus some of the loan itself, so the balance falls over time."],
+  ["Stressed rate", "The test a lender runs: could you still pay if rates were about 3 points higher?"],
+];
 
 export function Results(props: {
   inputs: Inputs;
@@ -29,10 +43,12 @@ export function Results(props: {
   setSellYear: (y: number) => void;
   setFreq: (f: "weekly" | "fortnightly" | "monthly") => void;
   onEnableBuyback: () => void;
+  onFix: (fix: CheckFix) => void;
 }) {
   const { inputs: I, structure: s, projection: pr, loan: L, checks, dutyEstimate, upfront, capacity } = props;
   const bs = pr.buybackSummary;
   const stateLink = SRO_LINKS[I.state];
+  const todo = checks.filter((c) => c.ok !== "yes" && (c.action || c.fix));
 
   const minBuyback = Math.round((RULES.minBuybackShareOfValue * s.homeValue) / RULES.buybackRoundTo) * RULES.buybackRoundTo;
   const repayShown = useAnimatedNumber(L.amounts[I.freq]);
@@ -60,7 +76,7 @@ export function Results(props: {
           <div className="hero-cell t-green">
             <h3><span className="dot" />Your share</h3>
             <span className="val num">{pct(stakeShown / 100)}</span>
-            <span className="cap">{aud(s.buyerShare)} of the value. Loan-to-price {pct(s.lvr)}</span>
+            <span className="cap">{aud(s.buyerShare)} of the value. Your loan is {pct(s.lvr)} of it</span>
           </div>
           <div className="hero-cell t-amber">
             <h3><span className="dot" />Government share</h3>
@@ -95,8 +111,8 @@ export function Results(props: {
         </div>
       </div>
 
-      <Section title="Repayment detail" id="repay" index="01" aside={
-        <button className={"btn seg-mini " + (I.freq === "monthly" ? "on" : "")} onClick={() => props.setFreq(nextFreq(I.freq))} title="cycle weekly / fortnightly / monthly">
+      <Section title="What you'll repay" id="repay" index="01" aside={
+        <button className={"btn seg-mini " + (I.freq === "monthly" ? "on" : "")} onClick={() => props.setFreq(nextFreq(I.freq))} title="switch between weekly, fortnightly and monthly">
           {I.freq}
         </button>
       }>
@@ -107,21 +123,60 @@ export function Results(props: {
           <tbody>
             <tr className="row-you"><th>Planned</th><td className="num">{aud(L.amounts[I.freq], { exact: true })}</td><td className="num">{num(L.payYears, 1)} yrs</td><td className="num">{aud(L.totalInterest)}</td></tr>
             <tr>
-              <th>Stressed +3% (APRA buffer)</th>
+              <th>If rates rose 3 points</th>
               <td className="num c-clay">{aud(L.stressedAmount, { exact: true })}</td>
-              <td colSpan={2} className="muted">the buffer the bank applies when assessing you</td>
+              <td colSpan={2} className="muted">the stress test banks run before they'll lend</td>
             </tr>
             <tr>
               <th>Remember</th>
               <td colSpan={3} className="muted" style={{ textAlign: "left" }}>
-                You pay interest on your share only. Interest-only repayments are allowed only while a home is being built.
+                You pay interest on your loan only. The government's share costs nothing as you go: no interest, no rent.
               </td>
             </tr>
           </tbody>
         </table>
       </Section>
 
-      <Section title="Checked against the rules" id="checks" index="02" aside={<a className="btn" href={SOURCES.eligibilityTool}>official eligibility tool �-</a>}>
+      <Section title="Will it work? The scheme rules" id="checks" index="02" aside={<a className="btn" href={SOURCES.eligibilityTool}>Official eligibility tool</a>}>
+        <div className={todo.length ? "todo" : "todo all-clear"}>
+          {todo.length ? (
+            <>
+              <h3>{todo.length === 1 ? "One thing to sort first" : `${todo.length} things to sort first`}</h3>
+              <ol>
+                {todo.map((c) => (
+                  <li key={c.id}>
+                    <strong>{c.label}</strong>
+                    <span>{c.action}</span>
+                    {c.fix ? (
+                      <button className="btn mini" onClick={() => props.onFix(c.fix!)}>
+                        {c.fix.label}
+                      </button>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            <>
+              <h3>Everything passes</h3>
+              <ol>
+                <li>
+                  <strong>Next step: talk to a lender</strong>
+                  <span>Ask one on the scheme's panel for a pre-approval. They check your income, spending and deposit properly, and confirm the share you can get.</span>
+                </li>
+                <li>
+                  <strong>Budget for settlement day</strong>
+                  <span>Stamp duty and setup costs are on top of the deposit (section 06). Buyers in some states pay less, or nothing.</span>
+                </li>
+                <li>
+                  <strong>Nothing here is locked in</strong>
+                  <span>Change a number on the left and every result updates. Keep this page and take it with you.</span>
+                </li>
+              </ol>
+            </>
+          )}
+        </div>
+
         <ul className="checks">
           {checks.map((c) => (
             <li key={c.id} data-ok={c.ok}>
@@ -132,15 +187,33 @@ export function Results(props: {
                   <span className={"chip " + CHIP[c.ok]}>{CHIP_LABEL[c.ok]}</span>
                 </span>
                 <span className="ck-detail">{c.detail}</span>
+                {c.action ? <span className="ck-action">{c.action}</span> : null}
+                {c.fix ? (
+                  <button className="btn mini ck-fix" onClick={() => props.onFix(c.fix!)}>{c.fix.label}</button>
+                ) : null}
               </span>
             </li>
           ))}
         </ul>
+
+        <details className="glossary">
+          <summary>Plain words used on this page</summary>
+          <dl>
+            {PLAIN_WORDS.map(([term, meaning]) => (
+              <div key={term}>
+                <dt>{term}</dt>
+                <dd>{meaning}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+
         {s.shortfall > 0 ? (
           <p className="big-warn">
-            The numbers don't close here: the biggest government contribution would be {aud(s.govShareLimit)}, leaving
-            you {aud(s.shortfall)} short. At this deposit and loan, the biggest home the scheme could bridge is
-            {" "}{aud(s.maxAffordablePrice)}.
+            The numbers don't close: even at the biggest share the government can take ({aud(s.govShareLimit)}), this
+            deposit and loan leave you {aud(s.shortfall)} short. At this deposit and loan, the most expensive home that
+            works is about {aud(s.maxAffordablePrice)}. Raise the deposit, accept a smaller loan, or look at a cheaper
+            home.
           </p>
         ) : null}
       </Section>
@@ -217,10 +290,10 @@ export function Results(props: {
                 Each buy-back is its own new loan at your rate and term, repaid principal and interest. That keeps the
                 balance honest: it falls year by year, and a payment made after the first loan is repaid still shows
                 up as debt. It also matters in practice - once that first loan is gone, a buy-back can only be paid
-                from savings or a new loan, and the lender has to approve and re-quote the repayment each time. Funding
-                this way can bring Lender's Mortgage Insurance back if the bigger loan goes over 80% of the value (the
-                scheme's Target Market Determination allows that choice). A fresh valuation is needed for each payment
-                and it must be made within 90 days of the valuation date.
+                from savings or a new loan, and the lender has to approve and quote the repayment each time. Borrowing
+                again can push the loan back over 80% of the value, which can bring LMI back - a one-off bank fee that
+                protects the bank, not you. The scheme's rules allow that choice. A fresh valuation is needed for each
+                payment and it must be made within 90 days of the valuation date.
               </p>
             ) : null}
             <p className="muted">
@@ -319,16 +392,17 @@ export function Results(props: {
         <p className="muted">{DUTY_ESTIMATE_NOTE} Grants and duty concessions can stack with Help to Buy, so check your state's first home buyer concessions too.</p>
       </Section>
 
-      <Section title="Serviceability sanity check (rough)" id="capacity" index="07">
+      <Section title="Could you afford it? A rough check" id="capacity" index="07">
         <table className="flat">
           <tbody>
-            <tr className="row-you"><th>Income inputs → rough capacity</th><td className="num strong c-green">{aud(capacity.estimate)}</td></tr>
-            <tr><th>Your entered borrowing amount</th><td className="num">{aud(capacity.against)}</td></tr>
+            <tr className="row-you"><th>What your income might support</th><td className="num strong c-green">{aud(capacity.estimate)}</td></tr>
+            <tr><th>The loan you've entered</th><td className="num">{aud(capacity.against)}</td></tr>
           </tbody>
         </table>
         <p className="muted">
-          Heuristic only (surplus after living costs + HECS + other debts at rate +3% buffer). CBA's formal assessment
-          via a Home Lending Specialist governs. If capacity is well below your entered loan, right-size the price.
+          This is a rule of thumb: income, less HECS, other debts and living costs, tested at 3 points above your rate.
+          A lender looks at everything properly and decides. If the first number is well under the second, the loan is
+          probably too big - lower the price or add to the deposit.
         </p>
       </Section>
     </div>
