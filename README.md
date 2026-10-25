@@ -17,7 +17,7 @@ Only the lender in the scheme confirms real eligibility.
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 23 unit tests on the calculation engine and the listing parser
+npm test         # 30 unit tests on the calculation engine and the listing parser
 npm run build    # type check + production build into dist/
 npm run preview  # serve dist/ locally to check the production bundle
 ```
@@ -25,6 +25,11 @@ npm run preview  # serve dist/ locally to check the production bundle
 Requires Node 20 or newer (Node 22 also fine). No other services needed.
 
 ## How the app works, top to bottom
+
+On a first visit a three step guided setup runs first: who is buying, the home, the loan. It has two
+one click exits: **Use the defaults** loads the official example (an $800,000 home, a 30 percent
+share, a 6.55 percent rate), and **Skip setup** keeps whatever is already on screen. Neither locks
+anything in.
 
 1. **Import bar.** Paste a listing link (any estate agent site we can legally read) and press
    Read listing. The app fetches the page through a reader relay and pre-fills price, address,
@@ -57,8 +62,9 @@ Requires Node 20 or newer (Node 22 also fine). No other services needed.
    - 02 Checked against the rules: income cap, 2 percent deposit, loan at 80 percent or less,
      government share range, price cap, the gap test, and the loan rules. Each row is a pass,
      fix or review chip with the official reasoning.
-   - 03 Your share over time: a 40 year chart of your equity, loan balance and the government
-     share in dollars, plus a milestones table and any modelled events.
+   - 03 Your share over time: a year by year chart of your equity, loan balance and the
+     government share in dollars (up to a 60 year horizon), plus a milestones table and any
+     modelled events.
    - 04 Path to full ownership: with a plan on, an equity journey bar (today to 100 percent)
      and a summary of the modelled payments; without one, a one-click "model a buy-back plan".
    - 05 Selling: slide the sale year and see the payout waterfall (agent, loan payout,
@@ -70,8 +76,8 @@ Requires Node 20 or newer (Node 22 also fine). No other services needed.
 
 4. **Scenario tools.** Save the current setup into compare slots A, B or C (kept in this
    browser) to compare the same deposit across houses. Share this scenario copies a link that
-   encodes every input. Print gives a clean paper layout. Start over clears the saved scenario
-   (compare slots are kept).
+   encodes every input. Print gives a clean paper layout. Reset to defaults clears the saved
+   scenario and loads the example (compare slots are kept).
 
 ## The scheme in a nutshell
 

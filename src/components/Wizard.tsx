@@ -8,7 +8,12 @@ import { MoneyInput, PctInput, Row, Seg, SelectRaw } from "./ui";
  * First-run guided setup: three short steps that fill the calculator in.
  * Sequential and independent steps (per NN/g staged disclosure), everything applies live.
  */
-export default function Wizard(props: { set: (patch: Partial<Inputs>) => void; inputs: Inputs; done: () => void }) {
+export default function Wizard(props: {
+  set: (patch: Partial<Inputs>) => void;
+  inputs: Inputs;
+  done: () => void;
+  useDefaults: () => void;
+}) {
   const [step, setStep] = useState(1);
   const { inputs: I, set } = props;
 
@@ -125,14 +130,17 @@ export default function Wizard(props: { set: (patch: Partial<Inputs>) => void; i
         ) : null}
 
         <div className="wizard-actions">
-          {step > 1 ? <button className="btn" onClick={() => setStep(step - 1)}>Back</button> : <span />}
-          {step < 3 ? (
-            <button className="btn solid" onClick={() => setStep(step + 1)}>Continue</button>
-          ) : (
-            <button className="btn solid" onClick={props.done}>See my plan</button>
-          )}
+          <div>{step > 1 ? <button className="btn" onClick={() => setStep(step - 1)}>Back</button> : null}</div>
+          <div className="wizard-next">
+            {step === 1 ? <button className="btn" onClick={props.useDefaults}>Use the defaults</button> : null}
+            {step < 3 ? (
+              <button className="btn solid" onClick={() => setStep(step + 1)}>Continue</button>
+            ) : (
+              <button className="btn solid" onClick={props.done}>See my plan</button>
+            )}
+          </div>
         </div>
-        <button className="mini-cta" onClick={props.done}>Skip setup - open the full calculator</button>
+        <button className="mini-cta" onClick={props.done}>Skip setup - open the calculator with the numbers already loaded</button>
       </div>
     </div>
   );

@@ -457,7 +457,7 @@ function simulateBalance(
 /**
  * Rough borrowing capacity from income: monthly surplus after living costs, HECS haircut and
  * other debts, applied at the STRESSED rate (rate + APRA 3% buffer). A lender's real
- * assessment (CBA's) differs — present this as a heuristic, never a quote.
+ * assessment (CBA's) differs - present this as a heuristic, never a quote.
  */
 export function borrowingCapacity(p: {
   grossIncome: number;
@@ -549,7 +549,7 @@ export function upfrontCash(inp: Inputs, s: Structure, dutyEstimate: number | nu
   return s.deposit + duty + inp.otherUpfrontCosts;
 }
 
-/** The official Customer Guide example — a sensible neutral starting point. */
+/** The official Customer Guide example - a sensible neutral starting point. */
 export const initialInputs: Inputs = {
   applicantType: "single",
   combinedIncome: 95_000,

@@ -98,12 +98,12 @@ export const RULES = {
 } as const;
 
 export const DEFAULTS = {
-  ratePct: 6.55, // editable — RBA cash rate 4.60% (30 Sep 2026) plus a typical ~2% variable margin; verify the lender's current rate
+  ratePct: 6.55, // editable - RBA cash rate 4.60% (30 Sep 2026) plus a typical ~2% variable margin; verify the lender's current rate
   growthPct: 3.0,
   incomeGrowthPct: 2.5,
 } as const;
 
-export const RBA_NOTE = "RBA cash rate 4.60% (30 Sep 2026). Standard variable loans typically sit ~2% above cash — check the lender's current rate.";
+export const RBA_NOTE = "RBA cash rate 4.60% (30 Sep 2026). Standard variable loans typically sit ~2% above cash - check the lender's current rate.";
 
 /** FY labels used across the UI. */
 export const FY_LABELS = {

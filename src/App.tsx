@@ -142,11 +142,17 @@ function Planner() {
     setInputs((prev) => ({ ...prev, ...p, buyback: { ...prev.buyback, ...(p.buyback ?? {}) } }));
   }
 
-  function finishWizard() {
+  function finishWizard(message = "You're set up - every number is still editable.") {
     try { localStorage.setItem(ONBOARD_KEY, "done"); } catch { /* ignore */ }
     setShowWizard(false);
-    setToast("You're set up - every number is still editable.");
-    setTimeout(() => setToast(""), 3200);
+    setToast(message);
+    setTimeout(() => setToast(""), 3600);
+  }
+
+  function useDefaults() {
+    try { localStorage.removeItem(STATE_KEY); } catch { /* ignore */ }
+    setInputs({ ...DEFAULT_INPUTS, buyback: { ...DEFAULT_INPUTS.buyback } });
+    finishWizard("Defaults loaded: $800,000 home, 30% government share, 6.55% rate. Change anything you like.");
   }
 
   function restartWizard() {
@@ -268,7 +274,7 @@ function Planner() {
           </p>
         </div>
         <div className="head-actions">
-          <button className="btn" onClick={startOver}>Start over</button>
+          <button className="btn" onClick={startOver} title="Clear this scenario and load the example numbers">Reset to defaults</button>
           <button className="btn" onClick={share}>Share this scenario</button>
           <button className="btn" onClick={() => window.print()}>Print</button>
         </div>
@@ -280,7 +286,7 @@ function Planner() {
       </p>
 
       {showWizard ? (
-        <Wizard inputs={inputs} set={patchInputs} done={finishWizard} />
+        <Wizard inputs={inputs} set={patchInputs} done={finishWizard} useDefaults={useDefaults} />
       ) : (
         <>
           <ListingImport onApply={patchInputs} />
@@ -312,10 +318,11 @@ function Planner() {
           />
           <Section title="Notes" id="notes">
             <ul className="plain notes-list">
-              <li><button className="mini-cta" onClick={restartWizard}>Run the guided setup again</button> - the three step intro: who is buying, the home, the loan.</li>
+              <li><button className="mini-cta" onClick={restartWizard}>Run the guided setup again</button> - the three step intro: who is buying, the home, the loan. Its <strong>Use the defaults</strong> button skips the questions and loads the official example.</li>
               <li><strong>Where your numbers live:</strong> this browser only. The open scenario and the A / B / C
                 slots sit in localStorage, nothing is sent anywhere, and there's no account. A shared link simply
-                puts your numbers in the URL; Start over clears the saved scenario.</li>
+                puts your numbers in the URL; Reset to defaults clears the saved scenario and loads the
+                official example.</li>
               <li><strong>Your lender is the key contact.</strong> They check your finances, lodge the application with
                 Housing Australia, and confirm final eligibility. This tool is a planner, not a quote. On the current
                 panel: CommBank, Bank Australia, Teachers Mutual Bank group, and Queensland Country Bank.</li>

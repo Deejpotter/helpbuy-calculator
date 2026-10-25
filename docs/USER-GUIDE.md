@@ -3,6 +3,20 @@
 Everything you can set and everything the app tells you back. Screenshot-free by design; the
 interface mirrors this text closely.
 
+## First visit: the guided setup
+
+Three short questions - who is buying, the home, the loan - and every answer applies live to the
+planner behind it. Two ways out of it:
+
+- **Use the defaults.** One click loads the official Customer Guide example: an $800,000 existing
+  home in a capital city, a 30 percent government share, a 6.55 percent rate and a 30 year loan.
+  Use it when you just want to see how the planner behaves, or when you want a clean baseline.
+- **Skip setup - open the calculator with the numbers already loaded.** Keeps whatever is already
+  on screen: your last scenario on this device, or the example on a first visit.
+
+Nothing is locked in. Every field stays editable, and **Reset to defaults** in the header brings
+the example back at any time.
+
 ## The import bar (top of the page)
 
 - **Paste a listing link, then Read listing.** The app fetches the page through a reader relay
@@ -46,7 +60,8 @@ interface mirrors this text closely.
 
 - **Term.** 20, 25 or 30 years, principal and interest only. Interest-only is allowed in the
   scheme only while a home is being built.
-- **Interest rate.** Default 5.5 percent is a placeholder; use your lender's real rate.
+- **Interest rate.** Default 6.55 percent: the RBA cash rate (4.60 percent, 30 September 2026)
+  plus a typical 2 point variable margin. Replace it with the rate your lender quotes.
 - **Frequency and extra repayments.** Weekly, fortnightly or monthly, plus anything extra you
   pay each period. Your mortgage payment covers your share only; the government share costs
   nothing as you go.
@@ -114,5 +129,5 @@ interface mirrors this text closely.
 - **Share this scenario.** Copies a link that carries all your inputs in the URL. Opening a
   shared link loads that scenario, and it then becomes your saved local state too.
 - **Persistence.** The open scenario saves itself in this browser's localStorage on every
-  change; nothing is sent anywhere. Start over clears it (compare slots stay).
+  change; nothing is sent anywhere. Reset to defaults clears it (compare slots stay).
 - **Print.** Clean layout without inputs or buttons.

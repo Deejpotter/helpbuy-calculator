@@ -416,7 +416,11 @@ table.mini td:last-child { text-align: right; font-variant-numeric: tabular-nums
   margin: 0 0 6px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--amber);
 }
-.wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; }
+.wizard-actions {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; flex-wrap: wrap; margin-top: 26px;
+}
+.wizard-next { display: flex; gap: 8px; margin-left: auto; }
 .wizard .mini-cta { margin-top: 18px; }
 .wizard-enter { animation: fadeUp 260ms ease-out both; }
 

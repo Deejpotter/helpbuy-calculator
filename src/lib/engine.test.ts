@@ -230,12 +230,12 @@ describe("project", () => {
       sellAfterYear: 5,
       agentPct: 0,          // isolate: 1M example? use growth to reach 1M at year 5
       saleLegalFees: 0,
-      termYears: 40,        // avoid full payoff noise: interest-only-ish? no — use 40-yr term
+      termYears: 40,        // avoid full payoff noise: interest-only-ish? no - use 40-yr term
       extraRepayment: 0,
     });
     void inp;
     // Simpler: reuse the guide numbers directly with custom mode and zero-growth loan math disabled is
-    // not possible — instead verify the waterfall arithmetic on a synthetic projection.
+    // not possible - instead verify the waterfall arithmetic on a synthetic projection.
     const s = structureFromFinance({ homeValue: 750_000, deposit: 30_000, maxLoan: 570_000, homeType: "existing", state: "NSW", region: "major" });
     const pr = project({ ...inp, sellAfterYear: 5 }, s);
     const sold = pr.soldAt!;
