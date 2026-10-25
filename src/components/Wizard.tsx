@@ -140,7 +140,7 @@ export default function Wizard(props: {
             )}
           </div>
         </div>
-        <button className="mini-cta" onClick={props.done}>Skip setup - open the calculator with the numbers already loaded</button>
+        <button className="mini-cta" onClick={props.done}>Skip setup - keep the numbers already loaded</button>
       </div>
     </div>
   );

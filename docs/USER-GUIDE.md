@@ -11,8 +11,8 @@ planner behind it. Two ways out of it:
 - **Use the defaults.** One click loads the official Customer Guide example: an $800,000 existing
   home in a capital city, a 30 percent government share, a 6.55 percent rate and a 30 year loan.
   Use it when you just want to see how the planner behaves, or when you want a clean baseline.
-- **Skip setup - open the calculator with the numbers already loaded.** Keeps whatever is already
-  on screen: your last scenario on this device, or the example on a first visit.
+- **Skip setup - keep the numbers already loaded.** Keeps whatever is already on screen: your last
+  scenario on this device, or the example on a first visit.
 
 Nothing is locked in. Every field stays editable, and **Reset to defaults** in the header brings
 the example back at any time.
