@@ -44,7 +44,7 @@ Sizes move by a kilobyte or two with each change; the split shape is what matter
 
 Vite splits `react` and `react-dom` into their own chunk (`manualChunks`), so app changes do
 not bust the framework cache. Minification is esbuild, hashing blows away stale caches, and
-index.html has an inline favicon (no extra request). Update this table after dependency
+the icons and web manifest are static files in `public/` (copied to the root of `dist/`). Update this table after dependency
 upgrades.
 
 ## Serving
